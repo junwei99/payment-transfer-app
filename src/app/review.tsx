@@ -5,11 +5,16 @@ import { selectTransferLocked, useTransferStore } from "@/stores/transfer";
 import { displayDetails } from "@/utils/transfer.utils";
 import { Redirect, router } from "expo-router";
 import { Text } from "react-native";
+import { useShallow } from "zustand/react/shallow";
 
 export default function ReviewScreen() {
-  const reviewed = useTransferStore((state) => state.reviewed);
+  const { reviewed, completedId } = useTransferStore(
+    useShallow((state) => ({
+      reviewed: state.reviewed,
+      completedId: state.completedId,
+    })),
+  );
   const locked = useTransferStore(selectTransferLocked);
-  const completedId = useTransferStore((state) => state.completedId);
 
   if (locked) {
     return <Redirect href="/authenticate" />;

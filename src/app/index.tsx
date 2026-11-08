@@ -10,12 +10,17 @@ import { selectTransferLocked, useTransferStore } from "@/stores/transfer";
 import { useQuery } from "@tanstack/react-query";
 import { Redirect, router } from "expo-router";
 import { Keyboard } from "react-native";
+import { useShallow } from "zustand/react/shallow";
 
 export default function TransferScreen() {
   const account = useQuery(accountOptions);
-  const note = useTransferStore((state) => state.draft.note);
-  const setDraft = useTransferStore((state) => state.setDraft);
-  const noteError = useTransferStore((state) => state.fieldErrors.note);
+  const { note, setDraft, noteError } = useTransferStore(
+    useShallow((state) => ({
+      note: state.draft.note,
+      setDraft: state.setDraft,
+      noteError: state.fieldErrors.note,
+    })),
+  );
   const locked = useTransferStore(selectTransferLocked);
   const review = useReviewTransfer();
 

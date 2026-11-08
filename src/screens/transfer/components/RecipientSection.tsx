@@ -7,15 +7,21 @@ import { recipientsOptions } from "@/query/banking";
 import { useTransferStore } from "@/stores/transfer";
 import { useQuery } from "@tanstack/react-query";
 import { Text, View } from "react-native";
+import { useShallow } from "zustand/react/shallow";
 
 export function RecipientSection() {
   const recipients = useQuery(recipientsOptions);
-  const manual = useTransferStore((state) => state.draft.manual);
-  const recipientId = useTransferStore((state) => state.draft.recipientId);
-  const name = useTransferStore((state) => state.draft.name);
-  const account = useTransferStore((state) => state.draft.account);
-  const error = useTransferStore((state) => state.fieldErrors.recipient);
-  const setDraft = useTransferStore((state) => state.setDraft);
+  const { manual, recipientId, name, account, error, setDraft } =
+    useTransferStore(
+      useShallow((state) => ({
+        manual: state.draft.manual,
+        recipientId: state.draft.recipientId,
+        name: state.draft.name,
+        account: state.draft.account,
+        error: state.fieldErrors.recipient,
+        setDraft: state.setDraft,
+      })),
+    );
 
   return (
     <View className="gap-4">

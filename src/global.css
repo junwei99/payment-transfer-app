@@ -1,12 +1,17 @@
-@import 'tailwindcss';
-@import 'uniwind';
+@import "tailwindcss";
+@import "uniwind";
 
-:root {
-  --font-display:
-    Spline Sans, Inter, ui-sans-serif, system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji,
-    Segoe UI Symbol, Noto Color Emoji;
-  --font-mono:
-    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
-  --font-rounded: 'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif;
-  --font-serif: Georgia, 'Times New Roman', serif;
+@theme {
+  --color-canvas: #fafaf8;
+  --color-surface: #ffffff;
+  --color-ink: #4a5568;
+  --color-secondary: #596779;
+  --color-accent: #b8d4e3;
+  --color-divider: #d4d4cf;
+  --color-control: #737c88;
+  --color-success: #98d8c8;
+  --color-error: #ffb7c5;
+  --color-paper: #f2efe7;
+  --color-sage: #e4e8dc;
+  --color-clay: #b99b85;
 }

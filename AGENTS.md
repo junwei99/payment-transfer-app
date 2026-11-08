@@ -10,10 +10,14 @@ Libraries with native code need a development build; Expo Go only includes its b
 
 ## Project decisions
 
+Use `@/…` absolute paths for all client-side local imports and asset `require` calls (`@/assets/…` for assets). Keep package imports as package names.
+
 Follow [docs/tech-choices.md](docs/tech-choices.md) for technology and implementation choices.
 
 Issues and specs live in `.scratch/`; see [docs/agents/issue-tracker.md](docs/agents/issue-tracker.md). Use the triage labels in [docs/agents/triage-labels.md](docs/agents/triage-labels.md), and follow the single-context layout in [docs/agents/domain.md](docs/agents/domain.md).
 
 ## Checks
+
+Run `pnpm dlx prettier --write --ignore-unknown <files>` on every modified or created file before declaring a task complete.
 
 Run `pnpm exec expo lint` and `pnpm exec tsc --noEmit` before declaring a task complete.

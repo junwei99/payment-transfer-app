@@ -1,16 +1,18 @@
-import { RecipientChoice } from "@/screens/transfer/components/RecipientChoice";
 import { Button } from "@/components/ui/Button";
 import { ErrorMessage } from "@/components/ui/ErrorMessage";
 import { Field } from "@/components/ui/Field";
 import { SectionTitle } from "@/components/ui/SectionTitle";
-import { recipientsOptions } from "@/query/banking";
+import { RECIPIENTS_OPTIONS } from "@/query/banking";
+import { RecipientChoice } from "@/screens/transfer/components/RecipientChoice";
 import { useTransferStore } from "@/stores/transfer";
+
 import { useQuery } from "@tanstack/react-query";
 import { Text, View } from "react-native";
 import { useShallow } from "zustand/react/shallow";
 
-export function RecipientSection() {
-  const recipients = useQuery(recipientsOptions);
+export const RecipientSection = () => {
+  const recipients = useQuery(RECIPIENTS_OPTIONS);
+
   const { manual, recipientId, name, account, error, setDraft } =
     useTransferStore(
       useShallow((state) => ({
@@ -26,6 +28,7 @@ export function RecipientSection() {
   return (
     <View className="gap-4">
       <SectionTitle>Recipient</SectionTitle>
+
       {recipients.isPending ? (
         <Text>
           {recipients.fetchStatus === "paused"
@@ -65,6 +68,7 @@ export function RecipientSection() {
           }
         />
       ))}
+
       <RecipientChoice
         name="Enter manually"
         selected={manual}
@@ -91,7 +95,8 @@ export function RecipientSection() {
           />
         </View>
       ) : null}
+
       {error ? <ErrorMessage message={error} /> : null}
     </View>
   );
-}
+};

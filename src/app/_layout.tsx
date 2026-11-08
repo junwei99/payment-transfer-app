@@ -5,7 +5,7 @@ import { StatusBar } from "expo-status-bar";
 
 import { QueryProvider } from "@/query/QueryProvider";
 
-export default function RootLayout() {
+const RootLayout = () => {
   return (
     <ThemeProvider value={DefaultTheme}>
       <StatusBar style="dark" />
@@ -20,4 +20,6 @@ export default function RootLayout() {
       </QueryProvider>
     </ThemeProvider>
   );
-}
+};
+
+export default RootLayout;

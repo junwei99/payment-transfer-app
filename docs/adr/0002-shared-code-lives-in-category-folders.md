@@ -18,7 +18,7 @@ utilities in `src/utils/`, schemas in `src/schemas/`, and types in `src/types/`.
 Use PascalCase filenames for `.tsx` files outside `src/app/`, matching the primary
 component or provider export. Route filenames preserve their URL names and Expo
 Router conventions, including `index.tsx` and `_layout.tsx`. Files without JSX
-use `.ts`; hooks keep the `use-` filename convention.
+use `.ts`. Follow the [code of conduct](../code-of-conduct.md) for hook filenames.
 
 ## Rationale
 

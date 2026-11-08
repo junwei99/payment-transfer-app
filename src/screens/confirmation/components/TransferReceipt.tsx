@@ -1,14 +1,17 @@
 import { Details } from "@/components/transfer/Details";
 import { transferOptions } from "@/query/banking";
 import { displayDetails } from "@/utils/transfer.utils";
+
 import { useQuery } from "@tanstack/react-query";
 import { Text, View } from "react-native";
 
-export function TransferReceipt({ id }: { id: string }) {
+export const TransferReceipt = ({ id }: { id: string }) => {
   const transfer = useQuery(transferOptions(id));
   const completed = transfer.data;
 
-  if (!completed) return null;
+  if (!completed) {
+    return null;
+  }
 
   return (
     <>
@@ -20,7 +23,9 @@ export function TransferReceipt({ id }: { id: string }) {
           Transfer completed on the simulated backend. No real money moved.
         </Text>
       </View>
+
       <Details details={displayDetails(completed)} />
+
       <View className="gap-2 border-t border-divider pt-5">
         <Text selectable className="text-base text-ink">
           Reference: {completed.reference}
@@ -31,4 +36,4 @@ export function TransferReceipt({ id }: { id: string }) {
       </View>
     </>
   );
-}
+};

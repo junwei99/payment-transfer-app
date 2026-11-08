@@ -1,13 +1,15 @@
 import { Field } from "@/components/ui/Field";
-import { accountOptions } from "@/query/banking";
+import { ACCOUNT_OPTIONS } from "@/query/banking";
 import { useTransferStore } from "@/stores/transfer";
 import { parseAmount } from "@/utils/transfer.utils";
+
 import { useQuery } from "@tanstack/react-query";
 import { Text } from "react-native";
 import { useShallow } from "zustand/react/shallow";
 
-export function TransferAmountField() {
-  const account = useQuery(accountOptions);
+export const TransferAmountField = () => {
+  const account = useQuery(ACCOUNT_OPTIONS);
+
   const { amount, error, setDraft } = useTransferStore(
     useShallow((state) => ({
       amount: state.draft.amount,
@@ -15,6 +17,7 @@ export function TransferAmountField() {
       setDraft: state.setDraft,
     })),
   );
+
   const amountMinor = parseAmount(amount);
 
   return (
@@ -36,4 +39,4 @@ export function TransferAmountField() {
       ) : null}
     </>
   );
-}
+};

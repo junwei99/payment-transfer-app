@@ -1,33 +1,34 @@
 import type { TGetApiEndpointSuccessResponse } from "@/schemas/api.schema";
 import type {
-  FieldErrors,
-  ReviewedTransfer,
-  Submission,
-  TransferDraft,
+  TFieldErrors,
+  TReviewedTransfer,
+  TSubmission,
+  TTransferDraft,
 } from "@/types/transfer.types";
 import { parseAmount } from "@/utils/transfer.utils";
+
 import type { SetStateAction } from "react";
 import { create } from "zustand";
 
-type Recipients = TGetApiEndpointSuccessResponse<"/recipients">;
+type TRecipients = TGetApiEndpointSuccessResponse<"/recipients">;
 
-type TransferState = {
-  draft: TransferDraft;
-  reviewed: ReviewedTransfer | null;
+type TTransferState = {
+  draft: TTransferDraft;
+  reviewed: TReviewedTransfer | null;
   completedId: string | null;
   pending: boolean;
-  unresolved: Submission | null;
-  fieldErrors: FieldErrors;
+  unresolved: TSubmission | null;
+  fieldErrors: TFieldErrors;
   issue: string | null;
-  setDraft: (value: SetStateAction<TransferDraft>) => void;
+  setDraft: (value: SetStateAction<TTransferDraft>) => void;
   review: (
-    currency: ReviewedTransfer["currency"],
-    recipients: Recipients,
+    currency: TReviewedTransfer["currency"],
+    recipients: TRecipients,
   ) => boolean;
   reset: () => void;
 };
 
-function emptyDraft(): TransferDraft {
+const emptyDraft = (): TTransferDraft => {
   return {
     recipientId: null,
     manual: false,
@@ -36,9 +37,9 @@ function emptyDraft(): TransferDraft {
     amount: "",
     note: "",
   };
-}
+};
 
-export const useTransferStore = create<TransferState>()((set, get) => ({
+export const useTransferStore = create<TTransferState>()((set, get) => ({
   draft: emptyDraft(),
   reviewed: null,
   completedId: null,
@@ -46,10 +47,13 @@ export const useTransferStore = create<TransferState>()((set, get) => ({
   unresolved: null,
   fieldErrors: {},
   issue: null,
-  setDraft(value) {
+
+  setDraft: (value) => {
     const { pending, unresolved, draft } = get();
 
-    if (pending || unresolved) return;
+    if (pending || unresolved) {
+      return;
+    }
 
     set({
       draft: typeof value === "function" ? value(draft) : value,
@@ -59,10 +63,13 @@ export const useTransferStore = create<TransferState>()((set, get) => ({
       fieldErrors: {},
     });
   },
-  review(currency, recipients) {
+
+  review: (currency, recipients) => {
     const { pending, unresolved, draft } = get();
 
-    if (pending || unresolved) return false;
+    if (pending || unresolved) {
+      return false;
+    }
 
     const recipient = draft.manual
       ? { name: draft.name.trim(), account: draft.account.trim() }
@@ -70,7 +77,7 @@ export const useTransferStore = create<TransferState>()((set, get) => ({
 
     const amountMinor = parseAmount(draft.amount);
 
-    const errors: FieldErrors = {};
+    const errors: TFieldErrors = {};
 
     if (!recipient?.name.trim() || !/^\d{10}$/.test(recipient.account)) {
       errors.recipient =
@@ -104,7 +111,7 @@ export const useTransferStore = create<TransferState>()((set, get) => ({
     return true;
   },
 
-  reset() {
+  reset: () => {
     if (get().pending || get().unresolved) {
       return;
     }
@@ -119,5 +126,5 @@ export const useTransferStore = create<TransferState>()((set, get) => ({
   },
 }));
 
-export const selectTransferLocked = (state: TransferState) =>
+export const selectTransferLocked = (state: TTransferState) =>
   state.pending || state.unresolved !== null;

@@ -1,6 +1,6 @@
 import { Text, View } from "react-native";
 
-export function ErrorMessage({ message }: { message: string }) {
+export const ErrorMessage = ({ message }: { message: string }) => {
   return (
     <View className="flex-row gap-3 rounded-lg bg-paper p-4">
       <View className="w-1 rounded-lg bg-error" />
@@ -13,4 +13,4 @@ export function ErrorMessage({ message }: { message: string }) {
       </Text>
     </View>
   );
-}
+};

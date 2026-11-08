@@ -2,18 +2,20 @@ import { Page } from "@/components/layout/Page";
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
 import { useReviewTransfer } from "@/hooks/useTransfer";
-import { accountOptions } from "@/query/banking";
+import { ACCOUNT_OPTIONS } from "@/query/banking";
 import { AvailableBalance } from "@/screens/transfer/components/AvailableBalance";
 import { RecipientSection } from "@/screens/transfer/components/RecipientSection";
 import { TransferAmountField } from "@/screens/transfer/components/TransferAmountField";
 import { selectTransferLocked, useTransferStore } from "@/stores/transfer";
+
 import { useQuery } from "@tanstack/react-query";
 import { Redirect, router } from "expo-router";
 import { Keyboard } from "react-native";
 import { useShallow } from "zustand/react/shallow";
 
-export default function TransferScreen() {
-  const account = useQuery(accountOptions);
+const TransferScreen = () => {
+  const account = useQuery(ACCOUNT_OPTIONS);
+
   const { note, setDraft, noteError } = useTransferStore(
     useShallow((state) => ({
       note: state.draft.note,
@@ -21,10 +23,13 @@ export default function TransferScreen() {
       noteError: state.fieldErrors.note,
     })),
   );
+
   const locked = useTransferStore(selectTransferLocked);
   const review = useReviewTransfer();
 
-  if (locked) return <Redirect href="/authenticate" />;
+  if (locked) {
+    return <Redirect href="/authenticate" />;
+  }
 
   return (
     <Page
@@ -32,6 +37,7 @@ export default function TransferScreen() {
       subtitle="Choose a recipient and add a personal note."
     >
       <AvailableBalance />
+
       <RecipientSection />
       <TransferAmountField />
       <Field
@@ -42,14 +48,20 @@ export default function TransferScreen() {
         error={noteError}
         multiline
       />
+
       <Button
         label="Review transfer"
         disabled={!account.data}
         onPress={() => {
           Keyboard.dismiss();
-          if (review()) router.navigate("/review");
+
+          if (review()) {
+            router.navigate("/review");
+          }
         }}
       />
     </Page>
   );
-}
+};
+
+export default TransferScreen;

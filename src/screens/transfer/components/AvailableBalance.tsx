@@ -1,13 +1,14 @@
 import { Amount } from "@/components/transfer/Amount";
 import { Button } from "@/components/ui/Button";
 import { ErrorMessage } from "@/components/ui/ErrorMessage";
-import { accountOptions } from "@/query/banking";
+import { ACCOUNT_OPTIONS } from "@/query/banking";
 import { formatMinor } from "@/utils/transfer.utils";
+
 import { useQuery } from "@tanstack/react-query";
 import { Text, View } from "react-native";
 
-export function AvailableBalance() {
-  const account = useQuery(accountOptions);
+export const AvailableBalance = () => {
+  const account = useQuery(ACCOUNT_OPTIONS);
 
   return (
     <View className="gap-3 rounded-xl bg-paper p-6">
@@ -45,4 +46,4 @@ export function AvailableBalance() {
       ) : null}
     </View>
   );
-}
+};

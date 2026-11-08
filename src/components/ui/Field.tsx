@@ -1,12 +1,13 @@
 import { Text, TextInput, View, type TextInputProps } from "react-native";
+
 import { ErrorMessage } from "@/components/ui/ErrorMessage";
 
-export function Field({
+export const Field = ({
   label,
   hint,
   error,
   ...props
-}: TextInputProps & { label: string; hint?: string; error?: string }) {
+}: TextInputProps & { label: string; hint?: string; error?: string }) => {
   return (
     <View className="gap-2">
       <Text className="text-sm text-secondary">{label}</Text>
@@ -21,4 +22,4 @@ export function Field({
       {error ? <ErrorMessage message={error} /> : null}
     </View>
   );
-}
+};

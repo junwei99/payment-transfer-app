@@ -1,21 +1,21 @@
 import {
-  completedTransfer,
-  errorResponse,
-  nonblank,
-  transferDetails,
+  COMPLETED_TRANSFER,
+  ERROR_RESPONSE,
+  NONBLANK,
+  TRANSFER_DETAILS,
 } from "@/schemas/common.schema";
 
-export const submitTransferReqSchema = transferDetails.extend({
-  approvalId: nonblank,
-  idempotencyKey: nonblank.max(200),
+export const SUBMIT_TRANSFER_REQ_SCHEMA = TRANSFER_DETAILS.extend({
+  approvalId: NONBLANK,
+  idempotencyKey: NONBLANK.max(200),
 });
 
-export const submitTransferResSchema = completedTransfer;
+export const SUBMIT_TRANSFER_RES_SCHEMA = COMPLETED_TRANSFER;
 
-export const submitTransferErrResponseSchema = errorResponse;
+export const SUBMIT_TRANSFER_ERR_RESPONSE_SCHEMA = ERROR_RESPONSE;
 
-export const submitTransferApiSchema = {
-  request: submitTransferReqSchema,
-  successResponse: submitTransferResSchema,
-  errResponse: submitTransferErrResponseSchema,
+export const SUBMIT_TRANSFER_API_SCHEMA = {
+  request: SUBMIT_TRANSFER_REQ_SCHEMA,
+  successResponse: SUBMIT_TRANSFER_RES_SCHEMA,
+  errResponse: SUBMIT_TRANSFER_ERR_RESPONSE_SCHEMA,
 };

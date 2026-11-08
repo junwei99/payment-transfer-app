@@ -1,13 +1,14 @@
 import {
-  accountOptions,
+  ACCOUNT_OPTIONS,
   isDefinitiveRejection,
-  recipientsOptions,
+  RECIPIENTS_OPTIONS,
   transferOptions,
   unwrap,
 } from "@/query/banking";
 import { bankingService } from "@/services/index.services";
 import { useTransferStore } from "@/stores/transfer";
-import type { ReviewedTransfer, Submission } from "@/types/transfer.types";
+import type { TReviewedTransfer, TSubmission } from "@/types/transfer.types";
+
 import {
   onlineManager,
   useMutation,
@@ -15,27 +16,35 @@ import {
 } from "@tanstack/react-query";
 import { randomUUID } from "expo-crypto";
 
-function requireOnline() {
-  if (!onlineManager.isOnline())
+const requireOnline = () => {
+  if (!onlineManager.isOnline()) {
     throw new Error("You’re offline. Connect and try again.");
-}
+  }
+};
 
-export function useReviewTransfer() {
+export const useReviewTransfer = () => {
   const client = useQueryClient();
+
   return () => {
-    const account = client.getQueryData(accountOptions.queryKey);
-    if (!account) return false;
-    const recipients = client.getQueryData(recipientsOptions.queryKey) ?? [];
+    const account = client.getQueryData(ACCOUNT_OPTIONS.queryKey);
+
+    if (!account) {
+      return false;
+    }
+
+    const recipients = client.getQueryData(RECIPIENTS_OPTIONS.queryKey) ?? [];
+
     return useTransferStore.getState().review(account.currency, recipients);
   };
-}
+};
 
-export function useSubmitTransfer() {
+export const useSubmitTransfer = () => {
   const client = useQueryClient();
 
   const approval = useMutation({
-    mutationFn: (details: ReviewedTransfer) => {
+    mutationFn: (details: TReviewedTransfer) => {
       requireOnline();
+
       return unwrap(bankingService.authorizeTransfer(details));
     },
     retry: false,
@@ -44,8 +53,9 @@ export function useSubmitTransfer() {
   });
 
   const submission = useMutation({
-    mutationFn: (body: Submission) => {
+    mutationFn: (body: TSubmission) => {
       requireOnline();
+
       return unwrap(bankingService.submitTransfer(body));
     },
     retry: false,
@@ -53,10 +63,12 @@ export function useSubmitTransfer() {
     gcTime: 0,
   });
 
-  async function transfer() {
+  const transfer = async () => {
     const { reviewed, pending, completedId } = useTransferStore.getState();
 
-    if (!reviewed || pending || completedId) return;
+    if (!reviewed || pending || completedId) {
+      return;
+    }
 
     useTransferStore.setState({ pending: true, issue: null });
 
@@ -87,7 +99,7 @@ export function useSubmitTransfer() {
         completedId: completed.id,
       });
 
-      void client.invalidateQueries({ queryKey: accountOptions.queryKey });
+      void client.invalidateQueries({ queryKey: ACCOUNT_OPTIONS.queryKey });
     } catch (error) {
       if (
         useTransferStore.getState().unresolved &&
@@ -108,9 +120,10 @@ export function useSubmitTransfer() {
     } finally {
       approval.reset();
       submission.reset();
+
       useTransferStore.setState({ pending: false });
     }
-  }
+  };
 
   return transfer;
-}
+};

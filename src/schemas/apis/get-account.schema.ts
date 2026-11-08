@@ -1,17 +1,17 @@
 import {
-  accountSchema,
-  emptyRequest,
-  errorResponse,
+  ACCOUNT_SCHEMA,
+  EMPTY_REQUEST,
+  ERROR_RESPONSE,
 } from "@/schemas/common.schema";
 
-export const getAccountReqSchema = emptyRequest;
+export const GET_ACCOUNT_REQ_SCHEMA = EMPTY_REQUEST;
 
-export const getAccountResSchema = accountSchema;
+export const GET_ACCOUNT_RES_SCHEMA = ACCOUNT_SCHEMA;
 
-export const getAccountErrResponseSchema = errorResponse;
+export const GET_ACCOUNT_ERR_RESPONSE_SCHEMA = ERROR_RESPONSE;
 
-export const getAccountApiSchema = {
-  request: getAccountReqSchema,
-  successResponse: getAccountResSchema,
-  errResponse: getAccountErrResponseSchema,
+export const GET_ACCOUNT_API_SCHEMA = {
+  request: GET_ACCOUNT_REQ_SCHEMA,
+  successResponse: GET_ACCOUNT_RES_SCHEMA,
+  errResponse: GET_ACCOUNT_ERR_RESPONSE_SCHEMA,
 };

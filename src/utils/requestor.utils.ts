@@ -1,22 +1,25 @@
 import { create, isCancel, isAxiosError, type AxiosResponse } from "axios";
 import { z } from "zod";
+
 import {
   getApiSchema,
-  type ApiResult,
+  type TApiResult,
   type TApiEndpoints,
   type TGetApiEndpointRequest,
   type TGetApiEndpointResponse,
 } from "@/schemas/api.schema";
 
-function getApiBaseURL(): string {
+const getApiBaseURL = (): string => {
   const baseURL = process.env.EXPO_PUBLIC_API_URL;
+
   if (!baseURL || !URL.canParse(baseURL) || !/^https?:\/\//.test(baseURL)) {
     throw new Error(
       "Set EXPO_PUBLIC_API_URL to a valid HTTP(S) service URL in .env.local. See README.md.",
     );
   }
+
   return baseURL;
-}
+};
 
 export const createRequestor = (
   {
@@ -28,6 +31,7 @@ export const createRequestor = (
   } = { baseURL: getApiBaseURL() },
 ) => {
   const url = new URL(baseURL);
+
   if (
     !/^https?:$/.test(url.protocol) ||
     url.username ||
@@ -39,8 +43,11 @@ export const createRequestor = (
       "API baseURL must be an HTTP(S) URL without credentials, query, or fragment.",
     );
   }
-  if (!Number.isFinite(timeout) || timeout <= 0)
+
+  if (!Number.isFinite(timeout) || timeout <= 0) {
     throw new Error("API timeout must be positive.");
+  }
+
   const client = create({
     baseURL,
     timeout,
@@ -50,7 +57,10 @@ export const createRequestor = (
     responseType: "text",
     transformResponse: [
       (data: unknown): unknown => {
-        if (typeof data !== "string") return data;
+        if (typeof data !== "string") {
+          return data;
+        }
+
         try {
           return JSON.parse(data) as unknown;
         } catch {
@@ -60,32 +70,36 @@ export const createRequestor = (
     ],
   });
 
-  function register(endpoint: {
+  const register = (endpoint: {
     path: string;
     request: z.ZodType;
     successResponse: z.ZodType;
     errResponse: z.ZodType;
-  }) {
+  }) => {
     if (!endpoint.path.startsWith("/") || endpoint.path.startsWith("//")) {
       throw new Error("Endpoint path must be relative to the API base URL.");
     }
+
     return async (
       body: unknown,
       options?: { signal?: AbortSignal },
-    ): Promise<ApiResult<unknown, unknown>> => {
+    ): Promise<TApiResult<unknown, unknown>> => {
       let response: AxiosResponse<unknown>;
+
       try {
         // Request schemas provide types only. Send the caller's original body.
         response = await client.post<unknown>(endpoint.path, body, {
           signal: options?.signal,
         });
       } catch (error) {
-        if (isCancel(error))
+        if (isCancel(error)) {
           return {
             kind: "transport-error",
             reason: "cancelled",
             message: "Request cancelled.",
           };
+        }
+
         if (isAxiosError(error)) {
           if (error.code === "ECONNABORTED" || error.code === "ETIMEDOUT") {
             return {
@@ -94,6 +108,7 @@ export const createRequestor = (
               message: "Request timed out.",
             };
           }
+
           if (
             error.code === "ERR_NETWORK" ||
             (error.request &&
@@ -109,11 +124,15 @@ export const createRequestor = (
             };
           }
         }
+
         throw error;
       }
+
       const { status, data } = response;
+
       if (status >= 200 && status < 300) {
         const parsed = endpoint.successResponse.safeParse(data);
+
         return parsed.success
           ? { kind: "success", data: parsed.data, status }
           : {
@@ -123,7 +142,9 @@ export const createRequestor = (
               status,
             };
       }
+
       const parsed = endpoint.errResponse.safeParse(data);
+
       return parsed.success
         ? { kind: "api-error", error: parsed.data, status }
         : {
@@ -133,14 +154,17 @@ export const createRequestor = (
             status,
           };
     };
-  }
+  };
+
   const createRequest = <T extends TApiEndpoints>(endpoint: T) => {
     const schema = getApiSchema(endpoint);
+
     // The registry key preserves the correlation between request and response schemas.
     return register({ path: endpoint, ...schema }) as (
       body: TGetApiEndpointRequest<T>,
       options?: { signal?: AbortSignal },
     ) => Promise<TGetApiEndpointResponse<T>>;
   };
+
   return { createRequest };
 };

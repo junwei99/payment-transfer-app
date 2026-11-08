@@ -1,21 +1,22 @@
 import { z } from "zod";
+
 import {
-  emptyRequest,
-  errorResponse,
-  nonblank,
-  recipient,
+  EMPTY_REQUEST,
+  ERROR_RESPONSE,
+  NONBLANK,
+  RECIPIENT,
 } from "@/schemas/common.schema";
 
-export const getRecipientsReqSchema = emptyRequest;
+export const GET_RECIPIENTS_REQ_SCHEMA = EMPTY_REQUEST;
 
-export const getRecipientsResSchema = z.array(
-  recipient.extend({ id: nonblank }),
+export const GET_RECIPIENTS_RES_SCHEMA = z.array(
+  RECIPIENT.extend({ id: NONBLANK }),
 );
 
-export const getRecipientsErrResponseSchema = errorResponse;
+export const GET_RECIPIENTS_ERR_RESPONSE_SCHEMA = ERROR_RESPONSE;
 
-export const getRecipientsApiSchema = {
-  request: getRecipientsReqSchema,
-  successResponse: getRecipientsResSchema,
-  errResponse: getRecipientsErrResponseSchema,
+export const GET_RECIPIENTS_API_SCHEMA = {
+  request: GET_RECIPIENTS_REQ_SCHEMA,
+  successResponse: GET_RECIPIENTS_RES_SCHEMA,
+  errResponse: GET_RECIPIENTS_ERR_RESPONSE_SCHEMA,
 };

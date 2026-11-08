@@ -10,9 +10,11 @@ Libraries with native code need a development build; Expo Go only includes its b
 
 ## Project decisions
 
-Use `@/…` absolute paths for all client-side local imports and asset `require` calls (`@/assets/…` for assets). Keep package imports as package names.
-
 Follow [docs/tech-choices.md](docs/tech-choices.md) for technology and implementation choices.
+
+When writing or modifying TypeScript or React Native code, follow the coding conventions in [docs/code-of-conduct.md](docs/code-of-conduct.md).
+
+Place new project documentation under `docs/`, using kebab-case filenames and existing topic folders where applicable. Add a pointer in `AGENTS.md` for docs agents must follow. Create documentation at the project root only when explicitly requested or required by a tool or framework.
 
 Issues and specs live in `.scratch/`; see [docs/agents/issue-tracker.md](docs/agents/issue-tracker.md). Use the triage labels in [docs/agents/triage-labels.md](docs/agents/triage-labels.md), and follow the single-context layout in [docs/agents/domain.md](docs/agents/domain.md).
 

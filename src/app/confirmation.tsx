@@ -5,10 +5,11 @@ import { TransferReceipt } from "@/screens/confirmation/components/TransferRecei
 import { Button } from "@/components/ui/Button";
 import { transferOptions } from "@/query/banking";
 import { selectTransferLocked, useTransferStore } from "@/stores/transfer";
+
 import { useQuery } from "@tanstack/react-query";
 import { Redirect, router, useLocalSearchParams } from "expo-router";
 
-export default function ConfirmationScreen() {
+const ConfirmationScreen = () => {
   const { id: param } = useLocalSearchParams<{ id?: string | string[] }>();
 
   const id = typeof param === "string" ? param : "";
@@ -17,7 +18,9 @@ export default function ConfirmationScreen() {
   const reset = useTransferStore((state) => state.reset);
   const locked = useTransferStore(selectTransferLocked);
 
-  if (locked) return <Redirect href="/authenticate" />;
+  if (locked) {
+    return <Redirect href="/authenticate" />;
+  }
 
   const completed = transfer.data;
 
@@ -29,6 +32,7 @@ export default function ConfirmationScreen() {
       <TransferLookupStatus id={id} />
       <TransferReceipt id={id} />
       <ConfirmationBalanceStatus transferCompleted={!!completed} />
+
       <Button
         label="Done"
         onPress={() => {
@@ -38,4 +42,6 @@ export default function ConfirmationScreen() {
       />
     </Page>
   );
-}
+};
+
+export default ConfirmationScreen;

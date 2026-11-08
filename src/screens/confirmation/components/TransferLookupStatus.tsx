@@ -1,10 +1,11 @@
 import { Button } from "@/components/ui/Button";
 import { ErrorMessage } from "@/components/ui/ErrorMessage";
 import { transferOptions } from "@/query/banking";
+
 import { useQuery } from "@tanstack/react-query";
 import { Text } from "react-native";
 
-export function TransferLookupStatus({ id }: { id: string }) {
+export const TransferLookupStatus = ({ id }: { id: string }) => {
   const transfer = useQuery(transferOptions(id));
 
   return (
@@ -33,4 +34,4 @@ export function TransferLookupStatus({ id }: { id: string }) {
       ) : null}
     </>
   );
-}
+};

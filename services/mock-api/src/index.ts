@@ -9,32 +9,34 @@ import {
 } from "./validation";
 
 const bank = new MockBank();
-const port = Number(Bun.env.PORT ?? "3001");
 
-if (!Number.isInteger(port) || port < 1 || port > 65535) {
+const PORT = Number(Bun.env.PORT ?? "3001");
+
+if (!Number.isInteger(PORT) || PORT < 1 || PORT > 65535) {
   throw new Error("PORT must be an integer between 1 and 65535.");
 }
 
-function json(
+const json = (
   body: unknown,
   status = 200,
   headers: Record<string, string> = {},
-) {
+) => {
   return Response.json(body, {
     status,
     headers: { "Cache-Control": "no-store", ...headers },
   });
-}
+};
 
-type Route = { method: string; handle: () => Response | Promise<Response> };
+type TRoute = { method: string; handle: () => Response | Promise<Response> };
 
-function route(request: Request, path: string): Route | undefined {
+const route = (request: Request, path: string): TRoute | undefined => {
   switch (path) {
     case "/health":
       return {
         method: "POST",
         handle: async () => {
           object(await readJson(request), []);
+
           return json({ status: "ok" });
         },
       };
@@ -43,6 +45,7 @@ function route(request: Request, path: string): Route | undefined {
         method: "POST",
         handle: async () => {
           object(await readJson(request), []);
+
           return json(bank.account());
         },
       };
@@ -51,6 +54,7 @@ function route(request: Request, path: string): Route | undefined {
         method: "POST",
         handle: async () => {
           object(await readJson(request), []);
+
           return json(bank.recipients());
         },
       };
@@ -59,6 +63,7 @@ function route(request: Request, path: string): Route | undefined {
         method: "POST",
         handle: async () => {
           const { details } = transferRequest(await readJson(request));
+
           return json(bank.authorize(details), 201);
         },
       };
@@ -70,11 +75,13 @@ function route(request: Request, path: string): Route | undefined {
             await readJson(request),
             true,
           );
+
           const { transfer, replayed } = bank.submit(
             details,
             approvalId,
             idempotencyKey,
           );
+
           return json(transfer, replayed ? 200 : 201);
         },
       };
@@ -83,6 +90,7 @@ function route(request: Request, path: string): Route | undefined {
         method: "POST",
         handle: async () => {
           object(await readJson(request), []);
+
           return json(bank.reset());
         },
       };
@@ -97,28 +105,36 @@ function route(request: Request, path: string): Route | undefined {
         method: "POST",
         handle: async () => {
           const body = object(await readJson(request), ["id"]);
+
           return json(bank.transfer(requiredString(body.id, "id")));
         },
       };
   }
-}
+};
 
 const server = Bun.serve({
   hostname: Bun.env.HOST ?? "0.0.0.0",
-  port,
+  port: PORT,
   maxRequestBodySize: 16 * 1024,
   idleTimeout: 60,
-  async fetch(request) {
+
+  fetch: async (request) => {
     const path = new URL(request.url).pathname;
+
     const delay =
       path === "/health" || path.startsWith("/__mock/")
         ? 0
         : bank.responseDelayMs();
+
     let response: Response;
+
     try {
       const selected = route(request, path);
-      if (!selected)
+
+      if (!selected) {
         throw new ApiError(404, "NOT_FOUND", "This endpoint does not exist.");
+      }
+
       if (request.method !== selected.method) {
         response = json(
           {
@@ -152,12 +168,18 @@ const server = Bun.serve({
         );
       }
     }
+
     // Delay the response after committing. A client timeout never rolls back a transfer.
-    if (delay) await Bun.sleep(delay);
+    if (delay) {
+      await Bun.sleep(delay);
+    }
+
     return response;
   },
-  error(error) {
+
+  error: (error) => {
     console.error(error);
+
     return json(
       {
         error: {

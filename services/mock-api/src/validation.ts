@@ -8,48 +8,55 @@ export class ApiError extends Error {
   }
 }
 
-export type TransferDetails = {
+export type TTransferDetails = {
   recipient: { name: string; account: string };
   amountMinor: number;
   currency: "MYR";
   note: string;
 };
 
-export type MockConfig = {
+export type TMockConfig = {
   approvalOutcome: "approved" | "cancelled" | "unavailable" | "rejected";
   transferOutcome: "normal" | "insufficient-funds" | "fail-once";
   responseDelayMs: number;
 };
 
-function invalid(message: string): never {
+const invalid: (message: string) => never = (message: string) => {
   throw new ApiError(400, "VALIDATION_ERROR", message);
-}
+};
 
-export function object(
+export const object = (
   value: unknown,
   allowedKeys: string[],
-): Record<string, unknown> {
+): Record<string, unknown> => {
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     invalid("Expected a JSON object.");
   }
+
   for (const key of Object.keys(value)) {
-    if (!allowedKeys.includes(key)) invalid(`Unknown field: ${key}.`);
+    if (!allowedKeys.includes(key)) {
+      invalid(`Unknown field: ${key}.`);
+    }
   }
+
   return value as Record<string, unknown>;
-}
+};
 
-export function requiredString(value: unknown, field: string): string {
-  if (typeof value !== "string" || !value.trim())
+export const requiredString = (value: unknown, field: string): string => {
+  if (typeof value !== "string" || !value.trim()) {
     invalid(`${field} is required.`);
-  return value.trim();
-}
+  }
 
-export async function readJson(request: Request): Promise<unknown> {
+  return value.trim();
+};
+
+export const readJson = async (request: Request): Promise<unknown> => {
   const contentType = request.headers
     .get("content-type")
     ?.split(";")[0]
     .trim()
     .toLowerCase();
+
   if (contentType !== "application/json") {
     throw new ApiError(
       415,
@@ -57,6 +64,7 @@ export async function readJson(request: Request): Promise<unknown> {
       "Use Content-Type: application/json.",
     );
   }
+
   try {
     return await request.json();
   } catch {
@@ -66,9 +74,9 @@ export async function readJson(request: Request): Promise<unknown> {
       "The request body must be valid JSON.",
     );
   }
-}
+};
 
-export function transferRequest(value: unknown, submission = false) {
+export const transferRequest = (value: unknown, submission = false) => {
   const body = object(value, [
     "recipient",
     "amountMinor",
@@ -76,11 +84,15 @@ export function transferRequest(value: unknown, submission = false) {
     "note",
     ...(submission ? ["approvalId", "idempotencyKey"] : []),
   ]);
+
   const recipient = object(body.recipient, ["name", "account"]);
   const name = requiredString(recipient.name, "recipient.name");
   const account = requiredString(recipient.account, "recipient.account");
-  if (!/^\d{10}$/.test(account))
+
+  if (!/^\d{10}$/.test(account)) {
     invalid("recipient.account must contain exactly 10 digits.");
+  }
+
   if (
     typeof body.amountMinor !== "number" ||
     !Number.isSafeInteger(body.amountMinor) ||
@@ -88,37 +100,49 @@ export function transferRequest(value: unknown, submission = false) {
   ) {
     invalid("amountMinor must be a positive safe integer.");
   }
-  if (body.currency !== "MYR") invalid("currency must be MYR.");
+
+  if (body.currency !== "MYR") {
+    invalid("currency must be MYR.");
+  }
+
   const note = body.note === undefined ? "" : body.note;
+
   if (typeof note !== "string" || note.length > 200) {
     invalid("note must be a string of at most 200 characters.");
   }
-  const details: TransferDetails = {
+
+  const details: TTransferDetails = {
     recipient: { name, account },
     amountMinor: body.amountMinor,
     currency: "MYR",
     note,
   };
+
   const idempotencyKey = submission
     ? requiredString(body.idempotencyKey, "idempotencyKey")
     : "";
-  if (idempotencyKey.length > 200)
+
+  if (idempotencyKey.length > 200) {
     invalid("idempotencyKey must be at most 200 characters.");
+  }
+
   return {
     idempotencyKey,
     details,
     approvalId: submission ? requiredString(body.approvalId, "approvalId") : "",
   };
-}
+};
 
-export function configRequest(value: unknown): Partial<MockConfig> {
+export const configRequest = (value: unknown): Partial<TMockConfig> => {
   const body = object(value, [
     "approvalOutcome",
     "transferOutcome",
     "responseDelayMs",
   ]);
-  const config: Partial<MockConfig> = {};
+
+  const config: Partial<TMockConfig> = {};
   const { approvalOutcome, transferOutcome, responseDelayMs } = body;
+
   if (approvalOutcome !== undefined) {
     if (
       approvalOutcome !== "approved" &&
@@ -130,8 +154,10 @@ export function configRequest(value: unknown): Partial<MockConfig> {
         "approvalOutcome must be approved, cancelled, unavailable, or rejected.",
       );
     }
+
     config.approvalOutcome = approvalOutcome;
   }
+
   if (transferOutcome !== undefined) {
     if (
       transferOutcome !== "normal" &&
@@ -142,8 +168,10 @@ export function configRequest(value: unknown): Partial<MockConfig> {
         "transferOutcome must be normal, insufficient-funds, or fail-once.",
       );
     }
+
     config.transferOutcome = transferOutcome;
   }
+
   if (responseDelayMs !== undefined) {
     if (
       typeof responseDelayMs !== "number" ||
@@ -153,7 +181,9 @@ export function configRequest(value: unknown): Partial<MockConfig> {
     ) {
       invalid("responseDelayMs must be an integer between 0 and 30000.");
     }
+
     config.responseDelayMs = responseDelayMs;
   }
+
   return config;
-}
+};

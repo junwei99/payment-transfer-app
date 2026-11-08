@@ -1,14 +1,16 @@
 import { Text, View } from "react-native";
-import type { TransferDetails } from "@/types/transfer.types";
+
+import type { TTransferDetails } from "@/types/transfer.types";
 import { Amount } from "@/components/transfer/Amount";
 
-export function Details({ details }: { details: TransferDetails }) {
+export const Details = ({ details }: { details: TTransferDetails }) => {
   return (
     <View className="gap-6 rounded-xl border border-divider bg-surface p-6">
       <View className="gap-3 border-b border-divider pb-6">
         <Text className="text-sm text-secondary">Transfer amount</Text>
         <Amount currency={details.currency} amount={details.amount} />
       </View>
+
       <View className="gap-2">
         <Text className="text-sm text-secondary">To</Text>
         <Text selectable className="text-xl text-ink">
@@ -18,6 +20,7 @@ export function Details({ details }: { details: TransferDetails }) {
           {details.account}
         </Text>
       </View>
+
       {details.note ? (
         <View className="gap-2">
           <Text className="text-sm text-secondary">Note</Text>
@@ -28,4 +31,4 @@ export function Details({ details }: { details: TransferDetails }) {
       ) : null}
     </View>
   );
-}
+};

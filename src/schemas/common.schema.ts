@@ -1,35 +1,35 @@
 import { z } from "zod";
 
-export const emptyRequest = z.object({});
+export const EMPTY_REQUEST = z.object({});
 
-export const errorResponse = z.object({
+export const ERROR_RESPONSE = z.object({
   error: z.object({ code: z.string(), message: z.string() }),
 });
 
-export const nonblank = z.string().refine((value) => value.trim().length > 0);
+export const NONBLANK = z.string().refine((value) => value.trim().length > 0);
 
-export const recipient = z.object({
-  name: nonblank,
+export const RECIPIENT = z.object({
+  name: NONBLANK,
   account: z.string().regex(/^\d{10}$/),
 });
 
-export const accountSchema = z.object({
-  id: nonblank,
+export const ACCOUNT_SCHEMA = z.object({
+  id: NONBLANK,
   balanceMinor: z.number().int().nonnegative(),
   currency: z.literal("MYR"),
 });
 
-export const transferDetails = z.object({
-  recipient,
+export const TRANSFER_DETAILS = z.object({
+  recipient: RECIPIENT,
   amountMinor: z.number().int().positive(),
   currency: z.literal("MYR"),
   note: z.string().max(200).optional(),
 });
 
-export const completedTransfer = transferDetails.extend({
+export const COMPLETED_TRANSFER = TRANSFER_DETAILS.extend({
   note: z.string().max(200),
-  id: nonblank,
-  reference: nonblank,
+  id: NONBLANK,
+  reference: NONBLANK,
   status: z.literal("completed"),
   createdAt: z.iso.datetime(),
 });

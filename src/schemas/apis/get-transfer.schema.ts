@@ -1,18 +1,19 @@
 import { z } from "zod";
+
 import {
-  completedTransfer,
-  errorResponse,
-  nonblank,
+  COMPLETED_TRANSFER,
+  ERROR_RESPONSE,
+  NONBLANK,
 } from "@/schemas/common.schema";
 
-export const getTransferReqSchema = z.object({ id: nonblank });
+export const GET_TRANSFER_REQ_SCHEMA = z.object({ id: NONBLANK });
 
-export const getTransferResSchema = completedTransfer;
+export const GET_TRANSFER_RES_SCHEMA = COMPLETED_TRANSFER;
 
-export const getTransferErrResponseSchema = errorResponse;
+export const GET_TRANSFER_ERR_RESPONSE_SCHEMA = ERROR_RESPONSE;
 
-export const getTransferApiSchema = {
-  request: getTransferReqSchema,
-  successResponse: getTransferResSchema,
-  errResponse: getTransferErrResponseSchema,
+export const GET_TRANSFER_API_SCHEMA = {
+  request: GET_TRANSFER_REQ_SCHEMA,
+  successResponse: GET_TRANSFER_RES_SCHEMA,
+  errResponse: GET_TRANSFER_ERR_RESPONSE_SCHEMA,
 };

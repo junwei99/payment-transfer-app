@@ -1,6 +1,6 @@
 import type { TGetApiEndpointRequest } from "@/schemas/api.schema";
 
-export type TransferDraft = {
+export type TTransferDraft = {
   recipientId: string | null;
   manual: boolean;
   name: string;
@@ -9,17 +9,20 @@ export type TransferDraft = {
   note: string;
 };
 
-export type ReviewedTransfer =
+export type TReviewedTransfer =
   TGetApiEndpointRequest<"/transfer-authorizations">;
-export type Submission = TGetApiEndpointRequest<"/transfers">;
-export type TransferDetails = {
+
+export type TSubmission = TGetApiEndpointRequest<"/transfers">;
+
+export type TTransferDetails = {
   name: string;
   account: string;
   amount: string;
   currency: string;
   note: string;
 };
-export type FieldErrors = {
+
+export type TFieldErrors = {
   recipient?: string;
   amount?: string;
   note?: string;

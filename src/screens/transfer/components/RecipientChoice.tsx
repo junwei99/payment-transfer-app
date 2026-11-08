@@ -1,6 +1,6 @@
 import { Pressable, Text, View } from "react-native";
 
-export function RecipientChoice({
+export const RecipientChoice = ({
   name,
   account,
   selected,
@@ -10,7 +10,7 @@ export function RecipientChoice({
   account?: string;
   selected: boolean;
   onPress: () => void;
-}) {
+}) => {
   return (
     <Pressable
       accessibilityRole="radio"
@@ -38,4 +38,4 @@ export function RecipientChoice({
       </View>
     </Pressable>
   );
-}
+};

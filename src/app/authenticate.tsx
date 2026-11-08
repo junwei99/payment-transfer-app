@@ -3,11 +3,12 @@ import { Button } from "@/components/ui/Button";
 import { ErrorMessage } from "@/components/ui/ErrorMessage";
 import { useSubmitTransfer } from "@/hooks/useTransfer";
 import { selectTransferLocked, useTransferStore } from "@/stores/transfer";
+
 import { Redirect, router, usePreventRemove } from "expo-router";
 import { Text } from "react-native";
 import { useShallow } from "zustand/react/shallow";
 
-export default function AuthenticateScreen() {
+const AuthenticateScreen = () => {
   const { reviewed, pending, issue, unresolved, completedId } =
     useTransferStore(
       useShallow((state) => ({
@@ -21,6 +22,12 @@ export default function AuthenticateScreen() {
 
   const transfer = useSubmitTransfer();
   const locked = useTransferStore(selectTransferLocked);
+
+  const authenticateBtnText = pending
+    ? "Processing…"
+    : unresolved
+      ? "Retry transfer"
+      : "Simulate authentication";
 
   usePreventRemove(locked, () => {});
 
@@ -63,13 +70,7 @@ export default function AuthenticateScreen() {
       ) : null}
 
       <Button
-        label={
-          pending
-            ? "Processing…"
-            : unresolved
-              ? "Retry transfer"
-              : "Simulate authentication"
-        }
+        label={authenticateBtnText}
         disabled={pending}
         onPress={() => {
           void transfer();
@@ -92,4 +93,6 @@ export default function AuthenticateScreen() {
       ) : null}
     </Page>
   );
-}
+};
+
+export default AuthenticateScreen;

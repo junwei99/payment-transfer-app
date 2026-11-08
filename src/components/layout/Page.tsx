@@ -8,13 +8,14 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { displayFont } from "@/utils/display-font";
 
-export function Page({
+import { DISPLAY_FONT } from "@/utils/display-font";
+
+export const Page = ({
   title,
   subtitle,
   children,
-}: PropsWithChildren<{ title: string; subtitle?: string }>) {
+}: PropsWithChildren<{ title: string; subtitle?: string }>) => {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#fafaf8" }}>
       <KeyboardAvoidingView
@@ -53,7 +54,7 @@ export function Page({
               </View>
               <Text
                 accessibilityRole="header"
-                style={displayFont}
+                style={DISPLAY_FONT}
                 className="text-4xl text-ink"
               >
                 {title}
@@ -70,4 +71,4 @@ export function Page({
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
-}
+};

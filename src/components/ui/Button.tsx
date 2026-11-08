@@ -1,6 +1,6 @@
 import { Pressable, Text } from "react-native";
 
-export function Button({
+export const Button = ({
   label,
   onPress,
   secondary = false,
@@ -10,7 +10,7 @@ export function Button({
   onPress: () => void;
   secondary?: boolean;
   disabled?: boolean;
-}) {
+}) => {
   return (
     <Pressable
       accessibilityRole="button"
@@ -29,4 +29,4 @@ export function Button({
       <Text className="text-center text-base text-ink">{label}</Text>
     </Pressable>
   );
-}
+};

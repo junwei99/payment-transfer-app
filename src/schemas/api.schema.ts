@@ -5,6 +5,11 @@ import { GET_TRANSFER_API_SCHEMA } from "@/schemas/apis/get-transfer.schema";
 import { SUBMIT_TRANSFER_API_SCHEMA } from "@/schemas/apis/submit-transfer.schema";
 import { z } from "zod";
 
+export type TApiResponseSchema<TSuccess = unknown, TError = unknown> = {
+  successResponse: z.ZodType<TSuccess>;
+  errResponse: z.ZodType<TError>;
+};
+
 export const API_SCHEMA = {
   "/account": GET_ACCOUNT_API_SCHEMA,
   "/recipients": GET_RECIPIENTS_API_SCHEMA,
@@ -13,12 +18,13 @@ export const API_SCHEMA = {
   "/transfers/lookup": GET_TRANSFER_API_SCHEMA,
 } as const satisfies Record<
   string,
-  { request: z.ZodType; successResponse: z.ZodType; errResponse: z.ZodType }
+  { request: z.ZodType } & TApiResponseSchema
 >;
 
 export type TApiEndpoints = keyof typeof API_SCHEMA;
 
-type TApiEndpointSchema<T extends TApiEndpoints> = (typeof API_SCHEMA)[T];
+export type TApiEndpointSchema<T extends TApiEndpoints = TApiEndpoints> =
+  (typeof API_SCHEMA)[T];
 
 export const getApiSchema = <T extends TApiEndpoints>(endpoint: T) =>
   API_SCHEMA[endpoint];
@@ -27,6 +33,10 @@ export const getResponseSchema = <T extends TApiEndpoints>(endpoint: T) => {
   const schema = getApiSchema(endpoint);
   return { success: schema.successResponse, error: schema.errResponse };
 };
+
+export type TApiSchemaRequest<TSchema extends TApiEndpointSchema> = z.input<
+  TSchema["request"]
+>;
 
 export type TGetApiEndpointRequest<T extends TApiEndpoints> = z.input<
   TApiEndpointSchema<T>["request"]
@@ -59,3 +69,8 @@ export type TApiResult<TSuccess, TFailure> =
       reason: "timeout" | "cancelled" | "network";
       message: string;
     };
+
+export type TApiSchemaResponse<TSchema extends TApiResponseSchema> = TApiResult<
+  z.output<TSchema["successResponse"]>,
+  z.output<TSchema["errResponse"]>
+>;

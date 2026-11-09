@@ -1,13 +1,46 @@
-import { create, isCancel, isAxiosError, type AxiosResponse } from "axios";
-import { z } from "zod";
-
 import {
   getApiSchema,
-  type TApiResult,
+  type TApiEndpointSchema,
   type TApiEndpoints,
-  type TGetApiEndpointRequest,
-  type TGetApiEndpointResponse,
+  type TApiResponseSchema,
+  type TApiSchemaRequest,
+  type TApiSchemaResponse,
 } from "@/schemas/api.schema";
+import { create, isAxiosError, isCancel, type AxiosResponse } from "axios";
+import { z } from "zod";
+
+const parseResponse = <TSchema extends TApiResponseSchema>(
+  schema: TSchema & TApiEndpointSchema,
+  data: unknown,
+  status: number,
+): TApiSchemaResponse<TSchema> => {
+  if (status >= 200 && status < 300) {
+    const parsed = z.safeParse<TSchema["successResponse"]>(
+      schema.successResponse,
+      data,
+    );
+
+    return parsed.success
+      ? { kind: "success", data: parsed.data, status }
+      : {
+          kind: "parse-error",
+          expected: "success",
+          issues: parsed.error.issues,
+          status,
+        };
+  }
+
+  const parsed = z.safeParse<TSchema["errResponse"]>(schema.errResponse, data);
+
+  return parsed.success
+    ? { kind: "api-error", error: parsed.data, status }
+    : {
+        kind: "parse-error",
+        expected: "error",
+        issues: parsed.error.issues,
+        status,
+      };
+};
 
 const getApiBaseURL = (): string => {
   const baseURL = process.env.EXPO_PUBLIC_API_URL;
@@ -53,7 +86,6 @@ export const createRequestor = (
     timeout,
     headers: { "Content-Type": "application/json" },
     validateStatus: () => true,
-    // Keep malformed JSON as unknown response data so Zod reports a parse-error.
     responseType: "text",
     transformResponse: [
       (data: unknown): unknown => {
@@ -62,7 +94,8 @@ export const createRequestor = (
         }
 
         try {
-          return JSON.parse(data) as unknown;
+          const parsed: unknown = JSON.parse(data);
+          return parsed;
         } catch {
           return data;
         }
@@ -70,25 +103,23 @@ export const createRequestor = (
     ],
   });
 
-  const register = (endpoint: {
-    path: string;
-    request: z.ZodType;
-    successResponse: z.ZodType;
-    errResponse: z.ZodType;
-  }) => {
-    if (!endpoint.path.startsWith("/") || endpoint.path.startsWith("//")) {
+  const register = <TSchema extends TApiEndpointSchema>(
+    schema: TSchema & { path: string },
+  ) => {
+    const { path } = schema;
+
+    if (!path.startsWith("/") || path.startsWith("//")) {
       throw new Error("Endpoint path must be relative to the API base URL.");
     }
 
     return async (
-      body: unknown,
+      body: TApiSchemaRequest<TSchema>,
       options?: { signal?: AbortSignal },
-    ): Promise<TApiResult<unknown, unknown>> => {
+    ): Promise<TApiSchemaResponse<TSchema>> => {
       let response: AxiosResponse<unknown>;
 
       try {
-        // Request schemas provide types only. Send the caller's original body.
-        response = await client.post<unknown>(endpoint.path, body, {
+        response = await client.post<unknown>(path, body, {
           signal: options?.signal,
         });
       } catch (error) {
@@ -130,41 +161,12 @@ export const createRequestor = (
 
       const { status, data } = response;
 
-      if (status >= 200 && status < 300) {
-        const parsed = endpoint.successResponse.safeParse(data);
-
-        return parsed.success
-          ? { kind: "success", data: parsed.data, status }
-          : {
-              kind: "parse-error",
-              expected: "success",
-              issues: parsed.error.issues,
-              status,
-            };
-      }
-
-      const parsed = endpoint.errResponse.safeParse(data);
-
-      return parsed.success
-        ? { kind: "api-error", error: parsed.data, status }
-        : {
-            kind: "parse-error",
-            expected: "error",
-            issues: parsed.error.issues,
-            status,
-          };
+      return parseResponse<TSchema>(schema, data, status);
     };
   };
 
   const createRequest = <T extends TApiEndpoints>(endpoint: T) => {
-    const schema = getApiSchema(endpoint);
-
-    // The registry key preserves the correlation between request and response schemas.
-    return register({ path: endpoint, ...schema }) as (
-      body: TGetApiEndpointRequest<T>,
-      options?: { signal?: AbortSignal },
-    ) => Promise<TGetApiEndpointResponse<T>>;
+    return register({ path: endpoint, ...getApiSchema(endpoint) });
   };
-
   return { createRequest };
 };

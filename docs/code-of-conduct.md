@@ -3,6 +3,19 @@
 Follow these conventions when writing or modifying TypeScript and React
 Native code.
 
+## Type safety
+
+Agents must never use type casts or type assertions in project code, including
+tests and mocks. This ban includes `as Type`, `<Type>value`, double assertions
+such as `as unknown as Type`, and `as const`. There are no exceptions for
+compiler errors or library typing limitations.
+
+Use type inference, explicit type annotations, or `satisfies` to check values.
+Narrow uncertain types with runtime checks and validate external data at the
+service boundary. Fix the underlying types or reshape the code when types do
+not agree. Do not hide casts in helpers or suppress type errors to bypass this
+rule.
+
 ## Naming
 
 | Item                   | Convention                                   | Example                                   |

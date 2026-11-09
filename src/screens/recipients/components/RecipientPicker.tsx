@@ -1,16 +1,16 @@
 import { Button } from "@/components/ui/Button";
-import { ErrorMessage } from "@/components/ui/ErrorMessage";
-import { Field } from "@/components/ui/Field";
-import { Skeleton } from "@/components/ui/Skeleton";
+import { useTransferFormActions } from "@/hooks/useTransferFormActions";
 import { RECIPIENTS_OPTIONS } from "@/query/banking";
-import { RecipientChoice } from "@/screens/transfer/components/RecipientChoice";
+import type { TTransferFormValues } from "@/schemas/transfer-form.schema";
+import { RecipientPickerResults } from "@/screens/recipients/components/RecipientPickerResults";
 import { selectTransferLocked, useTransferStore } from "@/stores/transfer";
+import type { TRecipientDraftSelection } from "@/types/transfer.types";
 import { DISPLAY_FONT } from "@/utils/display-font";
+import { getRecipientDraftSelection } from "@/utils/transfer-form.utils";
 import { useQuery } from "@tanstack/react-query";
 import { Redirect, router } from "expo-router";
-import { useState } from "react";
+import { useWatch } from "react-hook-form";
 import {
-  FlatList,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -18,28 +18,30 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useShallow } from "zustand/react/shallow";
 
 export const RecipientPicker = () => {
-  const recipients = useQuery(RECIPIENTS_OPTIONS);
-  const [search, setSearch] = useState("");
-  const locked = useTransferStore(selectTransferLocked);
-  const { manual, recipientId, setDraft } = useTransferStore(
-    useShallow((state) => ({
-      manual: state.draft.manual,
-      recipientId: state.draft.recipientId,
-      setDraft: state.setDraft,
-    })),
-  );
+  const { selectRecipient: updateRecipient } = useTransferFormActions();
 
-  const term = search.trim().toLowerCase();
-  const matches =
-    recipients.data?.filter(
-      ({ name, account }) =>
-        name.toLowerCase().includes(term) || account.includes(term),
-    ) ?? [];
+  const recipients = useQuery({ ...RECIPIENTS_OPTIONS, enabled: false });
+
+  const locked = useTransferStore(selectTransferLocked);
+
+  const [recipient, recipientId] = useWatch<
+    TTransferFormValues,
+    ["recipient", "recipientId"]
+  >({ name: ["recipient", "recipientId"] });
+
+  const recipientSelection = getRecipientDraftSelection({
+    recipient,
+    recipientId,
+  });
 
   const goBack = () => router.dismissTo("/");
+
+  const selectRecipient = (selection: TRecipientDraftSelection) => {
+    updateRecipient(selection);
+    goBack();
+  };
 
   if (locked) {
     return <Redirect href="/authenticate" />;
@@ -72,84 +74,21 @@ export const RecipientPicker = () => {
             Choose a recipient
           </Text>
 
-          <Field
-            label="Search recipients"
-            value={search}
-            onChangeText={setSearch}
-            placeholder="Name or account number"
-            autoCapitalize="none"
-            autoCorrect={false}
-            returnKeyType="search"
-          />
-
-          <View className="mt-6 gap-4">
-            <RecipientChoice
-              name="Enter manually"
-              selected={manual}
-              onPress={() => {
-                setDraft((draft) => ({
-                  ...draft,
-                  manual: true,
-                  recipientId: null,
-                }));
-                goBack();
-              }}
+          {!recipients.data ? (
+            <View className="gap-4">
+              <Text className="text-base text-ink">
+                Recipients unavailable. Return to the transfer form to refresh
+                or enter one manually.
+              </Text>
+              <Button label="Back to transfer" onPress={goBack} secondary />
+            </View>
+          ) : (
+            <RecipientPickerResults
+              recipients={recipients.data}
+              recipientSelection={recipientSelection}
+              onSelect={selectRecipient}
             />
-            {recipients.isFetching && recipients.data ? (
-              <Text className="text-sm text-secondary">
-                Refreshing recipients…
-              </Text>
-            ) : null}
-            {recipients.isPending && recipients.fetchStatus !== "paused" ? (
-              <Skeleton label="Loading recipients…" rows={3} />
-            ) : null}
-            {recipients.fetchStatus === "paused" && !recipients.data ? (
-              <Text className="text-sm text-secondary">
-                Connect to load recipients, or enter one manually.
-              </Text>
-            ) : null}
-            {recipients.error ? (
-              <ErrorMessage
-                message={`${recipients.data ? "Recipient refresh failed. " : ""}${recipients.error.message} You can enter a recipient manually.`}
-              />
-            ) : null}
-            {recipients.error || recipients.fetchStatus === "paused" ? (
-              <Button
-                label="Retry recipients"
-                secondary
-                onPress={() => {
-                  void recipients.refetch();
-                }}
-              />
-            ) : null}
-            {recipients.data && matches.length === 0 ? (
-              <Text className="py-4 text-sm text-secondary">
-                {term ? "No matching recipients." : "No saved recipients."}
-              </Text>
-            ) : null}
-          </View>
-
-          <FlatList
-            style={{ flex: 1, marginTop: 16 }}
-            data={matches}
-            keyExtractor={({ id }) => id}
-            keyboardShouldPersistTaps="handled"
-            renderItem={({ item }) => (
-              <RecipientChoice
-                name={item.name}
-                account={item.account}
-                selected={!manual && recipientId === item.id}
-                onPress={() => {
-                  setDraft((draft) => ({
-                    ...draft,
-                    manual: false,
-                    recipientId: item.id,
-                  }));
-                  goBack();
-                }}
-              />
-            )}
-          />
+          )}
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>

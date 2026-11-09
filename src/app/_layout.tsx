@@ -1,6 +1,7 @@
 import "@/global.css";
 import { DefaultTheme, Stack, ThemeProvider } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { TransferFormProvider } from "@/components/transfer/TransferFormProvider";
 import { QueryProvider } from "@/query/QueryProvider";
 
 const RootLayout = () => {
@@ -8,13 +9,15 @@ const RootLayout = () => {
     <ThemeProvider value={DefaultTheme}>
       <StatusBar style="dark" />
       <QueryProvider>
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            animation: "none",
-            contentStyle: { backgroundColor: "#fafaf8" },
-          }}
-        />
+        <TransferFormProvider>
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              animation: "none",
+              contentStyle: { backgroundColor: "#fafaf8" },
+            }}
+          />
+        </TransferFormProvider>
       </QueryProvider>
     </ThemeProvider>
   );

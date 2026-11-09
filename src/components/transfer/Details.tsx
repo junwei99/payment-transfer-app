@@ -1,8 +1,15 @@
 import { Text, View } from "react-native";
-import type { TTransferDetails } from "@/types/transfer.types";
+import type { TReviewedTransfer } from "@/types/transfer.types";
 import { Amount } from "@/components/transfer/Amount";
+import { displayDetails } from "@/utils/transfer.utils";
 
-export const Details = ({ details }: { details: TTransferDetails }) => {
+export const Details = ({
+  details: transfer,
+}: {
+  details: TReviewedTransfer;
+}) => {
+  const details = displayDetails(transfer);
+
   return (
     <View className="gap-6 rounded-xl border border-divider bg-surface p-6">
       <View className="gap-3 border-b border-divider pb-6">

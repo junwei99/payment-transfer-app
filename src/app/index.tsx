@@ -1,18 +1,12 @@
 import { Page } from "@/components/layout/Page";
-import { Button } from "@/components/ui/Button";
-import { Field } from "@/components/ui/Field";
 import { useOnline } from "@/hooks/useOnline";
-import { useReviewTransfer } from "@/hooks/useTransfer";
 import { ACCOUNT_OPTIONS, RECIPIENTS_OPTIONS } from "@/query/banking";
 import { AvailableBalance } from "@/screens/transfer/components/AvailableBalance";
-import { RecipientSection } from "@/screens/transfer/components/RecipientSection";
-import { TransferAmountField } from "@/screens/transfer/components/TransferAmountField";
+import { TransferForm } from "@/screens/transfer/components/TransferForm";
 import { selectTransferLocked, useTransferStore } from "@/stores/transfer";
 import { useQuery } from "@tanstack/react-query";
-import { Redirect, router } from "expo-router";
+import { Redirect } from "expo-router";
 import { useRef, useState } from "react";
-import { Keyboard } from "react-native";
-import { useShallow } from "zustand/react/shallow";
 
 const TransferScreen = () => {
   const account = useQuery(ACCOUNT_OPTIONS);
@@ -21,19 +15,10 @@ const TransferScreen = () => {
   const isOnline = useOnline();
 
   const [refreshing, setRefreshing] = useState(false);
+  // TOOD ASK AI: why is refreshInProgress required here?
   const refreshInProgress = useRef(false);
 
-  const { note, setDraft, noteError } = useTransferStore(
-    useShallow((state) => ({
-      note: state.draft.note,
-      setDraft: state.setDraft,
-      noteError: state.fieldErrors.note,
-    })),
-  );
-
   const locked = useTransferStore(selectTransferLocked);
-
-  const review = useReviewTransfer();
 
   const refresh = async () => {
     if (refreshInProgress.current) {
@@ -69,27 +54,7 @@ const TransferScreen = () => {
       }}
     >
       <AvailableBalance />
-      <RecipientSection />
-      <TransferAmountField />
-      <Field
-        label="Note (optional)"
-        value={note}
-        onChangeText={(note) => setDraft((value) => ({ ...value, note }))}
-        hint="Up to 200 characters."
-        error={noteError}
-        multiline
-      />
-      <Button
-        label="Review transfer"
-        disabled={!account.data}
-        onPress={() => {
-          Keyboard.dismiss();
-
-          if (review()) {
-            router.navigate("/review");
-          }
-        }}
-      />
+      <TransferForm />
     </Page>
   );
 };

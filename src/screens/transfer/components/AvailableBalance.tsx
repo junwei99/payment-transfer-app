@@ -1,9 +1,8 @@
 import { Amount } from "@/components/transfer/Amount";
-import { ConnectionNotice } from "@/components/ui/ConnectionNotice";
-import { ErrorMessage } from "@/components/ui/ErrorMessage";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { useOnline } from "@/hooks/useOnline";
-import { ACCOUNT_OPTIONS, isConnectionError } from "@/query/banking";
+import { StatusNotice } from "@/components/ui/StatusNotice";
+import { useConnectionStatus } from "@/hooks/useConnectionStatus";
+import { ACCOUNT_OPTIONS } from "@/query/banking";
 import { formatMinor } from "@/utils/transfer.utils";
 import { useQuery } from "@tanstack/react-query";
 import { Text, View } from "react-native";
@@ -16,17 +15,17 @@ export const AvailableBalance = () => {
     error,
   } = useQuery(ACCOUNT_OPTIONS);
 
-  const isOnline = useOnline();
+  const { isOnline, connectionUnavailable } = useConnectionStatus(
+    fetchStatus,
+    error,
+  );
 
-  const errorState = (() => {
+  const errState = (() => {
     if (isFetching) {
       return {
         state: "NO_ERROR",
       } as const;
     }
-
-    const connectionUnavailable =
-      !isOnline || fetchStatus === "paused" || isConnectionError(error);
 
     const networkErrorWithLastKnownResponse =
       accountResponse && connectionUnavailable;
@@ -52,6 +51,9 @@ export const AvailableBalance = () => {
     if (error) {
       return {
         state: "ERROR",
+        errTitle: accountResponse
+          ? "Balance may be out of date"
+          : "Can't load your balance",
         errMsg: accountResponse
           ? "Balance refresh failed. Showing the last known balance. Pull down to refresh."
           : "Failed to retrieve balance. Pull down to refresh.",
@@ -74,25 +76,28 @@ export const AvailableBalance = () => {
             currency={accountResponse.currency}
             amount={formatMinor(accountResponse.balanceMinor)}
           />
-        ) : errorState.state === "INITIAL_LOAD_NETWORK_ERROR" ? (
-          <ConnectionNotice
-            title={errorState.errTitle}
-            message={errorState.errMsg}
+        ) : errState.state === "INITIAL_LOAD_NETWORK_ERROR" ||
+          errState.state === "ERROR" ? (
+          <StatusNotice
+            variant={errState.state === "ERROR" ? "error" : "connection-error"}
+            title={errState.errTitle}
+            message={errState.errMsg}
           />
         ) : (
           <Text className="text-base text-ink">Balance unavailable.</Text>
         )}
       </View>
 
-      {errorState.state === "NETWORK_ERROR_WITH_KNOWN_RESPONSE" ? (
-        <ConnectionNotice
-          title={errorState.errTitle}
-          message={errorState.errMsg}
-        />
+      {errState.state === "NETWORK_ERROR_WITH_KNOWN_RESPONSE" ? (
+        <StatusNotice title={errState.errTitle} message={errState.errMsg} />
       ) : null}
 
-      {errorState.state === "ERROR" ? (
-        <ErrorMessage message={errorState.errMsg} />
+      {errState.state === "ERROR" && accountResponse ? (
+        <StatusNotice
+          variant="error"
+          title={errState.errTitle}
+          message={errState.errMsg}
+        />
       ) : null}
     </View>
   );

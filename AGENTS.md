@@ -12,6 +12,7 @@ Libraries with native code need a development build; Expo Go only includes its b
 
 Follow [docs/tech-choices.md](docs/tech-choices.md) for technology and implementation choices.
 Follow [docs/design/loading-states.md](docs/design/loading-states.md) for transfer loading and recipient selection behavior.
+Follow [docs/design/form-validation.md](docs/design/form-validation.md) when changing form schemas, validation, or transfer input behavior.
 
 When writing or modifying TypeScript or React Native code, follow the coding conventions in [docs/code-of-conduct.md](docs/code-of-conduct.md).
 

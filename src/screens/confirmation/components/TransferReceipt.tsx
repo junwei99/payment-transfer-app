@@ -1,7 +1,6 @@
 import { Details } from "@/components/transfer/Details";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { transferOptions } from "@/query/banking";
-import { displayDetails } from "@/utils/transfer.utils";
 import { useQuery } from "@tanstack/react-query";
 import { Text, View } from "react-native";
 
@@ -26,7 +25,7 @@ export const TransferReceipt = ({ id }: { id: string }) => {
         </Text>
       </View>
 
-      <Details details={displayDetails(completed)} />
+      <Details details={completed} />
 
       <View className="gap-2 border-t border-divider pt-5">
         <Text selectable className="text-base text-ink">

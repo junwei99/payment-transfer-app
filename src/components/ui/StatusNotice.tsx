@@ -76,12 +76,14 @@ const ConnectionIcon = () => {
   );
 };
 
-export const ConnectionNotice = ({
+export const StatusNotice = ({
   title,
   message,
+  variant = "connection-error",
 }: {
   title: string;
   message: string;
+  variant?: "connection-error" | "error";
 }) => {
   return (
     <View
@@ -91,7 +93,18 @@ export const ConnectionNotice = ({
       accessibilityLabel={`${title}. ${message}`}
       className="flex-row items-start gap-3"
     >
-      <ConnectionIcon />
+      {variant === "connection-error" ? (
+        <ConnectionIcon />
+      ) : (
+        <View
+          accessible={false}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+          className="h-12 w-12 shrink-0 items-center justify-center rounded-full bg-error"
+        >
+          <Text className="text-2xl text-ink">!</Text>
+        </View>
+      )}
       <View className="flex-1 gap-1">
         <Text className="text-base text-ink">{title}</Text>
         <Text className="text-sm leading-5 text-secondary">{message}</Text>

@@ -1,35 +1,27 @@
-import { Details } from "@/components/transfer/Details";
 import { Page } from "@/components/layout/Page";
+import { Details } from "@/components/transfer/Details";
 import { Button } from "@/components/ui/Button";
 import { selectTransferLocked, useTransferStore } from "@/stores/transfer";
-import { displayDetails } from "@/utils/transfer.utils";
 import { Redirect, router } from "expo-router";
 import { Text } from "react-native";
-import { useShallow } from "zustand/react/shallow";
 
 const ReviewScreen = () => {
-  const { reviewed, completedId } = useTransferStore(
-    useShallow((state) => ({
-      reviewed: state.reviewed,
-      completedId: state.completedId,
-    })),
-  );
-
+  const journey = useTransferStore((state) => state.journey);
   const locked = useTransferStore(selectTransferLocked);
 
   if (locked) {
     return <Redirect href="/authenticate" />;
   }
 
-  if (completedId) {
+  if (journey.status === "COMPLETED") {
     return (
       <Redirect
-        href={{ pathname: "/confirmation", params: { id: completedId } }}
+        href={{ pathname: "/confirmation", params: { id: journey.id } }}
       />
     );
   }
 
-  if (!reviewed) {
+  if (journey.status !== "REVIEWED" && journey.status !== "REJECTED") {
     return <Redirect href="/" />;
   }
 
@@ -38,7 +30,7 @@ const ReviewScreen = () => {
       title="Review transfer"
       subtitle="Take a moment to check the details."
     >
-      <Details details={displayDetails(reviewed)} />
+      <Details details={journey.details} />
 
       <Button
         label="Continue"

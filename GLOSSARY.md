@@ -14,6 +14,16 @@ The funds available to send through a transfer, expressed in the account's curre
 **Recipient**:
 The person and destination account to which a transfer is addressed.
 
+**Saved recipient**:
+A recipient the sender picks from their saved recipient list.
+
+**Manual recipient**:
+A recipient the sender enters by name and account number.
+
+**Recipient selection**:
+The recipient a draft currently holds, which is none, a saved recipient, or a
+manual recipient.
+
 **Transfer approval**:
 Permission to submit a specified transfer after the sender authenticates.
 It applies to that transfer rather than signing the sender into the app.

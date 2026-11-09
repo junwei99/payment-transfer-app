@@ -1,131 +1,146 @@
-import type { TGetApiEndpointSuccessResponse } from "@/schemas/api.schema";
 import type {
-  TFieldErrors,
   TReviewedTransfer,
-  TSubmission,
-  TTransferDraft,
+  TTransferFailure,
+  TTransferJourney,
 } from "@/types/transfer.types";
-import { parseAmount } from "@/utils/transfer.utils";
-import type { SetStateAction } from "react";
 import { create } from "zustand";
 
-type TRecipients = TGetApiEndpointSuccessResponse<"/recipients">;
+type TTransferAction =
+  | { type: "REVIEW"; details: TReviewedTransfer }
+  | { type: "INVALIDATE_REVIEW" }
+  | { type: "RESET" }
+  | { type: "START_APPROVAL" }
+  | {
+      type: "APPROVAL_SUCCEEDED";
+      approvalId: string;
+      idempotencyKey: string;
+    }
+  | { type: "APPROVAL_FAILED"; error: TTransferFailure | null }
+  | { type: "RETRY_SUBMISSION" }
+  | { type: "SUBMISSION_SUCCEEDED"; id: string }
+  | { type: "SUBMISSION_REJECTED"; error: TTransferFailure | null }
+  | { type: "SUBMISSION_UNRESOLVED" };
 
 type TTransferState = {
-  draft: TTransferDraft;
-  reviewed: TReviewedTransfer | null;
-  completedId: string | null;
-  pending: boolean;
-  pendingPhase: "approval" | "submission" | null;
-  unresolved: TSubmission | null;
-  fieldErrors: TFieldErrors;
-  issue: string | null;
-  setDraft: (value: SetStateAction<TTransferDraft>) => void;
-  review: (
-    currency: TReviewedTransfer["currency"],
-    recipients: TRecipients,
-  ) => boolean;
-  reset: () => void;
+  journey: TTransferJourney;
+  dispatch: (action: TTransferAction) => boolean;
 };
 
-const emptyDraft = (): TTransferDraft => {
-  return {
-    recipientId: null,
-    manual: false,
-    name: "",
-    account: "",
-    amount: "",
-    note: "",
-  };
-};
+export const selectTransferLocked = (state: { journey: TTransferJourney }) =>
+  state.journey.status === "APPROVING" ||
+  state.journey.status === "SUBMITTING" ||
+  state.journey.status === "UNRESOLVED";
 
-export const useTransferStore = create<TTransferState>()((set, get) => ({
-  draft: emptyDraft(),
-  reviewed: null,
-  completedId: null,
-  pending: false,
-  pendingPhase: null,
-  unresolved: null,
-  fieldErrors: {},
-  issue: null,
+const transitionJourney = (
+  journey: TTransferJourney,
+  action: TTransferAction,
+): TTransferJourney | null => {
+  switch (action.type) {
+    case "REVIEW": {
+      if (selectTransferLocked({ journey })) {
+        return null;
+      }
 
-  setDraft: (value) => {
-    const { pending, unresolved, draft } = get();
-
-    if (pending || unresolved) {
-      return;
+      return { status: "REVIEWED", details: action.details };
     }
+    case "INVALIDATE_REVIEW":
+    case "RESET": {
+      if (selectTransferLocked({ journey })) {
+        return null;
+      }
 
-    set({
-      draft: typeof value === "function" ? value(draft) : value,
-      reviewed: null,
-      completedId: null,
-      issue: null,
-      fieldErrors: {},
-    });
-  },
+      return { status: "IDLE" };
+    }
+    case "START_APPROVAL": {
+      if (journey.status !== "REVIEWED" && journey.status !== "REJECTED") {
+        return null;
+      }
 
-  review: (currency, recipients) => {
-    const { pending, unresolved, draft } = get();
+      return { status: "APPROVING", details: journey.details };
+    }
+    case "APPROVAL_SUCCEEDED": {
+      if (journey.status !== "APPROVING") {
+        return null;
+      }
 
-    if (pending || unresolved) {
+      return {
+        status: "SUBMITTING",
+        submission: {
+          ...journey.details,
+          recipient: { ...journey.details.recipient },
+          approvalId: action.approvalId,
+          idempotencyKey: action.idempotencyKey,
+        },
+      };
+    }
+    case "APPROVAL_FAILED": {
+      if (journey.status !== "APPROVING") {
+        return null;
+      }
+
+      return {
+        status: "REJECTED",
+        details: journey.details,
+        error: action.error,
+      };
+    }
+    case "RETRY_SUBMISSION": {
+      if (journey.status !== "UNRESOLVED") {
+        return null;
+      }
+
+      return { status: "SUBMITTING", submission: journey.submission };
+    }
+    case "SUBMISSION_SUCCEEDED": {
+      if (journey.status !== "SUBMITTING") {
+        return null;
+      }
+
+      return { status: "COMPLETED", id: action.id };
+    }
+    case "SUBMISSION_REJECTED": {
+      if (journey.status !== "SUBMITTING") {
+        return null;
+      }
+
+      const { recipient, amountMinor, currency, note } = journey.submission;
+
+      return {
+        status: "REJECTED",
+        details: { recipient: { ...recipient }, amountMinor, currency, note },
+        error: action.error,
+      };
+    }
+    case "SUBMISSION_UNRESOLVED": {
+      if (journey.status !== "SUBMITTING") {
+        return null;
+      }
+
+      return { status: "UNRESOLVED", submission: journey.submission };
+    }
+  }
+};
+
+const useWritableTransferStore = create<TTransferState>()((set, get) => ({
+  journey: { status: "IDLE" },
+  dispatch: (action) => {
+    const journey = transitionJourney(get().journey, action);
+
+    if (journey === null) {
       return false;
     }
 
-    const recipient = draft.manual
-      ? { name: draft.name.trim(), account: draft.account.trim() }
-      : recipients.find(({ id }) => id === draft.recipientId);
-
-    const amountMinor = parseAmount(draft.amount);
-
-    const errors: TFieldErrors = {};
-
-    if (!recipient?.name.trim() || !/^\d{10}$/.test(recipient.account)) {
-      errors.recipient =
-        "Enter a recipient name and a ten-digit account number, or choose a recipient.";
-    }
-
-    if (amountMinor === null) {
-      errors.amount =
-        "Enter a positive amount with at most two decimal places within the supported limit.";
-    }
-
-    if (draft.note.length > 200) {
-      errors.note = "Use at most 200 characters for the note.";
-    }
-
-    set({ fieldErrors: errors, issue: null, completedId: null });
-
-    if (Object.keys(errors).length || !recipient || amountMinor === null) {
-      return false;
-    }
-
-    set({
-      reviewed: {
-        recipient: { name: recipient.name.trim(), account: recipient.account },
-        amountMinor,
-        currency,
-        note: draft.note,
-      },
-    });
+    set({ journey });
 
     return true;
   },
-
-  reset: () => {
-    if (get().pending || get().unresolved) {
-      return;
-    }
-
-    set({
-      draft: emptyDraft(),
-      reviewed: null,
-      completedId: null,
-      fieldErrors: {},
-      issue: null,
-    });
-  },
 }));
 
-export const selectTransferLocked = (state: TTransferState) =>
-  state.pending || state.unresolved !== null;
+export const useTransferStore = Object.assign(
+  <TSelected>(selector: (state: TTransferState) => TSelected) =>
+    useWritableTransferStore(selector),
+  {
+    getState: useWritableTransferStore.getState,
+    subscribe: useWritableTransferStore.subscribe,
+  },
+);

@@ -1,3 +1,4 @@
+import { useTransferFormActions } from "@/hooks/useTransferFormActions";
 import { ConfirmationBalanceStatus } from "@/screens/confirmation/components/ConfirmationBalanceStatus";
 import { Page } from "@/components/layout/Page";
 import { TransferLookupStatus } from "@/screens/confirmation/components/TransferLookupStatus";
@@ -14,7 +15,7 @@ const ConfirmationScreen = () => {
   const id = typeof param === "string" ? param : "";
 
   const transfer = useQuery(transferOptions(id));
-  const reset = useTransferStore((state) => state.reset);
+  const { resetTransfer } = useTransferFormActions();
   const locked = useTransferStore(selectTransferLocked);
 
   if (locked) {
@@ -35,7 +36,7 @@ const ConfirmationScreen = () => {
       <Button
         label="Done"
         onPress={() => {
-          reset();
+          resetTransfer();
           router.dismissTo("/");
         }}
       />

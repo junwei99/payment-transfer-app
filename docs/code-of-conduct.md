@@ -1,97 +1,17 @@
 # Code of conduct
 
-Follow these conventions when writing or modifying TypeScript and React
-Native code.
+Apply to TypeScript and React Native code, including tests and mocks.
 
-## Type safety
+- Types: ban hard casts (`as Type`, `<Type>value`, double assertions), hidden casts, and type-error suppression. Allow `as const`. Use inference, annotations, `satisfies`, and runtime narrowing; validate external data at service boundaries. Fix incompatible types or reshape code.
 
-Hard type casts are strictly banned in project code, tests, and mocks. Never use
-`as Type`, `<Type>value`, or double assertions such as `as unknown as Type`,
-including to work around compiler errors or library typing limitations. `as const`
-is a const assertion for literal inference and readonly values, and is allowed.
+- Naming: camelCase variables; UPPER_SNAKE_CASE fixed constants (limits/configuration); PascalCase components; `T`-prefixed PascalCase type aliases; `I`-prefixed PascalCase interfaces. Runtime `const` values use camelCase.
 
-Use type inference, explicit type annotations, or `satisfies` to check values.
-Narrow uncertain types with runtime checks and validate external data at the
-service boundary. Fix the underlying types or reshape the code when types do
-not agree. Do not hide casts in helpers or suppress type errors to bypass this
-rule.
+- Files: PascalCase component files; camelCase or kebab-case hook files starting with `use`; kebab-case other TypeScript files. Preserve framework, declaration, and configuration filenames, including `index.tsx`, `_layout.tsx`, `expo-env.d.ts`, and `tsconfig.json`. Route filenames follow URL names.
 
-## Naming
+- Imports: use configured absolute aliases for all project-local imports, type imports, re-exports, and dynamic imports. Client source uses `@/…`; asset `require` calls use `@/assets/…`. Ban `./` and `../`; keep package names for package imports.
 
-| Item                   | Convention                                   | Example                                   |
-| ---------------------- | -------------------------------------------- | ----------------------------------------- |
-| Variables              | camelCase                                    | `recipientName`, `transferAmount`         |
-| Constants              | UPPER_SNAKE_CASE                             | `MAX_TRANSFER_AMOUNT`, `API_TIMEOUT_MS`   |
-| React component files  | PascalCase                                   | `TransferForm.tsx`, `PrimaryButton.tsx`   |
-| Hook files             | camelCase or kebab-case, starting with `use` | `useTransfer.ts`, `use-transfer.ts`       |
-| Other TypeScript files | kebab-case                                   | `transfer-store.ts`, `requestor.utils.ts` |
-| Type aliases           | PascalCase prefixed with `T`                 | `TTransfer`, `TTransferFormProps`         |
-| Interfaces             | PascalCase prefixed with `I`                 | `ITransferService`, `IButtonProps`        |
+- Functions: use arrow functions for components, hooks, utilities, and callbacks; declare named arrows with `const`.
 
-Use UPPER_SNAKE_CASE for fixed constants such as limits and configuration values.
-Runtime variables declared with `const`, such as component props, hook results,
-and calculated values, use camelCase. React component identifiers use PascalCase.
+- Spacing: keep imports contiguous, then one blank line. Separate logical groups with one blank line, including inside hooks and callbacks: guards, declarations, helpers, subscriptions, async work, cleanup, and returns. Keep statements for one small task together.
 
-Preserve framework-required filenames, including Expo Router's `index.tsx` and
-`_layout.tsx`. Route filenames follow their URL names. Keep required declaration
-and configuration filenames, such as `expo-env.d.ts` and `tsconfig.json`.
-
-## Imports
-
-Always use configured absolute aliases for project-local imports. In the client,
-use `@/…` for source files and `@/assets/…` for asset `require` calls. Relative
-paths starting with `./` or `../` are not allowed. Apply the same rule to type
-imports, re-exports, and dynamic imports. Keep package imports as package names.
-
-```ts
-import { Button } from "@/components/ui/Button";
-import type { TTransferDraft } from "@/types/transfer.types";
-import { useQuery } from "@tanstack/react-query";
-
-const branchImage = require("@/assets/images/botanical-branch.svg");
-```
-
-## Functions
-
-Use arrow functions for React components, hooks, utilities, and callbacks instead of traditional `function` declarations or expressions. Declare named arrow functions with `const`.
-
-```ts
-const formatAmount = (amount: number): string => amount.toFixed(2);
-```
-
-## Spacing and logical groups
-
-Separate logical groups with one blank line: guard clauses, related declarations,
-helper functions, event subscriptions, asynchronous work, and cleanup or return
-blocks. Keep statements that perform the same small task together. Apply this
-grouping inside callbacks and hooks as well as between top-level declarations.
-Keep file imports in one contiguous block with no blank lines between import
-statements. Use one blank line between the import block and the rest of the file.
-
-```ts
-if (isLocked) {
-  return;
-}
-
-const amountMinor = parseAmount(amount);
-const recipient = recipients.find(({ id }) => id === recipientId);
-
-setDraft({ amountMinor, recipient });
-
-return recipient;
-```
-
-## Conditionals
-
-Always use curly braces for `if`, `else if`, and `else` blocks, including blocks
-containing a single return or assignment.
-
-```ts
-if (isLocked) {
-  return;
-}
-
-if (isApproved) {
-  transfer.status = "approved";
-}
-```
+- Conditionals: always use braces for `if`, `else if`, and `else`, including single statements.

@@ -1,5 +1,5 @@
-import { ApiError } from "./validation";
 import type { TMockConfig, TTransferDetails } from "./validation";
+import { ApiError } from "./validation";
 
 type TApproval = { detailsKey: string; expiresAt: number; consumed: boolean };
 

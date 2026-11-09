@@ -1,41 +1,35 @@
 import { Field } from "@/components/ui/Field";
+import { FormNotice } from "@/components/ui/FormNotice";
+import { useTransferField } from "@/hooks/useTransferField";
 import { ACCOUNT_OPTIONS } from "@/query/banking";
-import { useTransferStore } from "@/stores/transfer";
 import { parseAmount } from "@/utils/transfer.utils";
 import { useQuery } from "@tanstack/react-query";
-import { Text } from "react-native";
-import { useShallow } from "zustand/react/shallow";
+import { View } from "react-native";
 
 export const TransferAmountField = () => {
+  const amount = useTransferField("amount");
   const account = useQuery(ACCOUNT_OPTIONS);
+  const amountMinor = parseAmount(amount.value);
 
-  const { amount, error, setDraft } = useTransferStore(
-    useShallow((state) => ({
-      amount: state.draft.amount,
-      error: state.fieldErrors.amount,
-      setDraft: state.setDraft,
-    })),
-  );
-
-  const amountMinor = parseAmount(amount);
+  const showInputAmountExceedBalanceWarning =
+    account.data &&
+    amountMinor !== null &&
+    amountMinor > account.data.balanceMinor;
 
   return (
-    <>
+    <View className="gap-3">
       <Field
+        {...amount}
         label={`Amount${account.data ? ` (${account.data.currency})` : ""}`}
-        value={amount}
-        onChangeText={(amount) => setDraft((value) => ({ ...value, amount }))}
         keyboardType="decimal-pad"
-        error={error}
+        hint="Up to 20 characters; at most two decimal places."
       />
-      {account.data &&
-      amountMinor !== null &&
-      amountMinor > account.data.balanceMinor ? (
-        <Text className="text-base text-secondary">
-          This amount exceeds the last available balance. The service will check
-          your balance when you submit.
-        </Text>
+      {showInputAmountExceedBalanceWarning ? (
+        <FormNotice
+          variant="warning"
+          message="This amount exceeds the last available balance. You can still review this transfer. The service will check your balance when you submit."
+        />
       ) : null}
-    </>
+    </View>
   );
 };

@@ -1,71 +1,85 @@
 import { Page } from "@/components/layout/Page";
 import { Button } from "@/components/ui/Button";
 import { ErrorMessage } from "@/components/ui/ErrorMessage";
-import { useSubmitTransfer } from "@/hooks/useTransfer";
+import { useSubmitTransfer } from "@/hooks/useSubmitTransfer";
 import { selectTransferLocked, useTransferStore } from "@/stores/transfer";
+import { getRejectionMessage } from "@/utils/transfer-error.utils";
 import { Redirect, router, usePreventRemove } from "expo-router";
 import { Text } from "react-native";
-import { useShallow } from "zustand/react/shallow";
 
 const AuthenticateScreen = () => {
-  const { reviewed, pending, pendingPhase, issue, unresolved, completedId } =
-    useTransferStore(
-      useShallow((state) => ({
-        reviewed: state.reviewed,
-        pending: state.pending,
-        pendingPhase: state.pendingPhase,
-        issue: state.issue,
-        unresolved: state.unresolved,
-        completedId: state.completedId,
-      })),
-    );
+  const journey = useTransferStore((state) => state.journey);
 
   const transfer = useSubmitTransfer();
+
   const locked = useTransferStore(selectTransferLocked);
 
-  const authenticateBtnText = pending
-    ? pendingPhase === "submission"
-      ? "Sending transfer…"
-      : "Approving transfer…"
-    : unresolved
-      ? "Retry transfer"
-      : "Simulate authentication";
+  const pending =
+    journey.status === "APPROVING" || journey.status === "SUBMITTING";
+
+  const unresolved = journey.status === "UNRESOLVED";
+
+  const errorMessage = (() => {
+    if (journey.status === "UNRESOLVED") {
+      return "We couldn't confirm whether this transfer completed.";
+    }
+
+    return journey.status === "REJECTED"
+      ? getRejectionMessage(journey.error)
+      : null;
+  })();
+
+  const authenticateBtnText = (() => {
+    if (pending) {
+      return journey.status === "SUBMITTING"
+        ? "Sending transfer…"
+        : "Approving transfer…";
+    }
+
+    return unresolved ? "Retry transfer" : "Simulate authentication";
+  })();
+
+  const title = (() => {
+    if (pending) {
+      return journey.status === "SUBMITTING"
+        ? "Sending transfer"
+        : "Approving transfer";
+    }
+
+    return unresolved ? "Transfer status unknown" : "Simulated authentication";
+  })();
+
+  const description = (() => {
+    if (pending) {
+      return journey.status === "SUBMITTING"
+        ? "Sending transfer. Keep the app open."
+        : "Approving transfer. Keep the app open.";
+    }
+
+    return "Authentication is simulated. This does not use device security or collect credentials. Approval and payment are processed by the simulated backend.";
+  })();
 
   usePreventRemove(locked, () => {});
 
-  if (completedId) {
+  if (journey.status === "COMPLETED") {
     return (
       <Redirect
-        href={{ pathname: "/confirmation", params: { id: completedId } }}
+        href={{ pathname: "/confirmation", params: { id: journey.id } }}
       />
     );
   }
 
-  if (!reviewed) {
+  if (journey.status === "IDLE") {
     return <Redirect href="/" />;
   }
 
   return (
-    <Page
-      title={
-        pending
-          ? pendingPhase === "submission"
-            ? "Sending transfer"
-            : "Approving transfer"
-          : unresolved
-            ? "Transfer status unknown"
-            : "Simulated authentication"
-      }
-    >
+    <Page title={title}>
       <Text accessibilityLiveRegion="polite" className="text-base text-ink">
-        {pending
-          ? pendingPhase === "submission"
-            ? "Sending transfer. Keep the app open."
-            : "Approving transfer. Keep the app open."
-          : "Authentication is simulated. This does not use device security or collect credentials. Approval and payment are processed by the simulated backend."}
+        {description}
       </Text>
 
-      {issue ? <ErrorMessage message={issue} /> : null}
+      {errorMessage ? <ErrorMessage message={errorMessage} /> : null}
 
       {unresolved && !pending ? (
         <Text className="text-base text-ink">
@@ -91,7 +105,7 @@ const AuthenticateScreen = () => {
         onPress={() => router.dismissTo("/review")}
       />
 
-      {issue && !locked ? (
+      {journey.status === "REJECTED" ? (
         <Button
           label="Edit details"
           secondary

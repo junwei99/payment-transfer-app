@@ -1,5 +1,4 @@
 import { Text, View } from "react-native";
-
 import { DISPLAY_FONT } from "@/utils/display-font";
 
 export const Amount = ({

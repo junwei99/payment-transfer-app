@@ -1,6 +1,5 @@
 import type { TApiResult } from "@/schemas/api.schema";
 import { bankingService } from "@/services/index.services";
-
 import { queryOptions } from "@tanstack/react-query";
 
 type TFailure = Exclude<

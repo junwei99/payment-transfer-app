@@ -1,5 +1,4 @@
 import { z } from "zod";
-
 import {
   COMPLETED_TRANSFER,
   ERROR_RESPONSE,

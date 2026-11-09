@@ -5,7 +5,6 @@ import { SectionTitle } from "@/components/ui/SectionTitle";
 import { RECIPIENTS_OPTIONS } from "@/query/banking";
 import { RecipientChoice } from "@/screens/transfer/components/RecipientChoice";
 import { useTransferStore } from "@/stores/transfer";
-
 import { useQuery } from "@tanstack/react-query";
 import { Text, View } from "react-native";
 import { useShallow } from "zustand/react/shallow";

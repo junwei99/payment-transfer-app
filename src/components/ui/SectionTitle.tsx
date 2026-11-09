@@ -1,6 +1,5 @@
 import type { PropsWithChildren } from "react";
 import { Text } from "react-native";
-
 import { DISPLAY_FONT } from "@/utils/display-font";
 
 export const SectionTitle = ({ children }: PropsWithChildren) => {

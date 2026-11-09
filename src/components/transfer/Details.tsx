@@ -1,5 +1,4 @@
 import { Text, View } from "react-native";
-
 import type { TTransferDetails } from "@/types/transfer.types";
 import { Amount } from "@/components/transfer/Amount";
 

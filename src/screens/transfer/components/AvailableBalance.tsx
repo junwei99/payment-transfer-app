@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/Button";
 import { ErrorMessage } from "@/components/ui/ErrorMessage";
 import { ACCOUNT_OPTIONS } from "@/query/banking";
 import { formatMinor } from "@/utils/transfer.utils";
-
 import { useQuery } from "@tanstack/react-query";
 import { Text, View } from "react-native";
 

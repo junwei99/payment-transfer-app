@@ -1,7 +1,6 @@
 import { Details } from "@/components/transfer/Details";
 import { transferOptions } from "@/query/banking";
 import { displayDetails } from "@/utils/transfer.utils";
-
 import { useQuery } from "@tanstack/react-query";
 import { Text, View } from "react-native";
 

@@ -6,7 +6,6 @@ import type {
   TTransferDraft,
 } from "@/types/transfer.types";
 import { parseAmount } from "@/utils/transfer.utils";
-
 import type { SetStateAction } from "react";
 import { create } from "zustand";
 

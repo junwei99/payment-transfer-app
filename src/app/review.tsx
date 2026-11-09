@@ -3,7 +3,6 @@ import { Page } from "@/components/layout/Page";
 import { Button } from "@/components/ui/Button";
 import { selectTransferLocked, useTransferStore } from "@/stores/transfer";
 import { displayDetails } from "@/utils/transfer.utils";
-
 import { Redirect, router } from "expo-router";
 import { Text } from "react-native";
 import { useShallow } from "zustand/react/shallow";

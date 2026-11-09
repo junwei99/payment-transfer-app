@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/Button";
 import { ErrorMessage } from "@/components/ui/ErrorMessage";
 import { useSubmitTransfer } from "@/hooks/useTransfer";
 import { selectTransferLocked, useTransferStore } from "@/stores/transfer";
-
 import { Redirect, router, usePreventRemove } from "expo-router";
 import { Text } from "react-native";
 import { useShallow } from "zustand/react/shallow";

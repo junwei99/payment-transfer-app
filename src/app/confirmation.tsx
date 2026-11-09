@@ -5,7 +5,6 @@ import { TransferReceipt } from "@/screens/confirmation/components/TransferRecei
 import { Button } from "@/components/ui/Button";
 import { transferOptions } from "@/query/banking";
 import { selectTransferLocked, useTransferStore } from "@/stores/transfer";
-
 import { useQuery } from "@tanstack/react-query";
 import { Redirect, router, useLocalSearchParams } from "expo-router";
 

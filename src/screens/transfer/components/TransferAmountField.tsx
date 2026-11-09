@@ -2,7 +2,6 @@ import { Field } from "@/components/ui/Field";
 import { ACCOUNT_OPTIONS } from "@/query/banking";
 import { useTransferStore } from "@/stores/transfer";
 import { parseAmount } from "@/utils/transfer.utils";
-
 import { useQuery } from "@tanstack/react-query";
 import { Text } from "react-native";
 import { useShallow } from "zustand/react/shallow";

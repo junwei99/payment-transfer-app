@@ -1,6 +1,5 @@
 import { Button } from "@/components/ui/Button";
 import { ACCOUNT_OPTIONS } from "@/query/banking";
-
 import { useQuery } from "@tanstack/react-query";
 import { Text } from "react-native";
 

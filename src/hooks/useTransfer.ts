@@ -8,7 +8,6 @@ import {
 import { bankingService } from "@/services/index.services";
 import { useTransferStore } from "@/stores/transfer";
 import type { TReviewedTransfer, TSubmission } from "@/types/transfer.types";
-
 import {
   onlineManager,
   useMutation,

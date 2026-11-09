@@ -1,8 +1,6 @@
 import "@/global.css";
-
 import { DefaultTheme, Stack, ThemeProvider } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-
 import { QueryProvider } from "@/query/QueryProvider";
 
 const RootLayout = () => {

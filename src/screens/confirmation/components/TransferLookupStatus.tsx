@@ -1,7 +1,6 @@
 import { Button } from "@/components/ui/Button";
 import { ErrorMessage } from "@/components/ui/ErrorMessage";
 import { transferOptions } from "@/query/banking";
-
 import { useQuery } from "@tanstack/react-query";
 import { Text } from "react-native";
 

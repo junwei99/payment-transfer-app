@@ -1,10 +1,9 @@
-import { z } from "zod";
-
 import { AUTHORIZE_TRANSFER_API_SCHEMA } from "@/schemas/apis/authorize-transfer.schema";
 import { GET_ACCOUNT_API_SCHEMA } from "@/schemas/apis/get-account.schema";
 import { GET_RECIPIENTS_API_SCHEMA } from "@/schemas/apis/get-recipients.schema";
 import { GET_TRANSFER_API_SCHEMA } from "@/schemas/apis/get-transfer.schema";
 import { SUBMIT_TRANSFER_API_SCHEMA } from "@/schemas/apis/submit-transfer.schema";
+import { z } from "zod";
 
 export const API_SCHEMA = {
   "/account": GET_ACCOUNT_API_SCHEMA,
@@ -26,7 +25,6 @@ export const getApiSchema = <T extends TApiEndpoints>(endpoint: T) =>
 
 export const getResponseSchema = <T extends TApiEndpoints>(endpoint: T) => {
   const schema = getApiSchema(endpoint);
-
   return { success: schema.successResponse, error: schema.errResponse };
 };
 

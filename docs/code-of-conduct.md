@@ -33,7 +33,6 @@ imports, re-exports, and dynamic imports. Keep package imports as package names.
 ```ts
 import { Button } from "@/components/ui/Button";
 import type { TTransferDraft } from "@/types/transfer.types";
-
 import { useQuery } from "@tanstack/react-query";
 
 const branchImage = require("@/assets/images/botanical-branch.svg");
@@ -52,8 +51,9 @@ const formatAmount = (amount: number): string => amount.toFixed(2);
 Separate logical groups with one blank line: guard clauses, related declarations,
 helper functions, event subscriptions, asynchronous work, and cleanup or return
 blocks. Keep statements that perform the same small task together. Apply this
-grouping inside callbacks and hooks as well as at module scope, where imports and
-top-level declarations form separate groups.
+grouping inside callbacks and hooks as well as between top-level declarations.
+Keep file imports in one contiguous block with no blank lines between import
+statements. Use one blank line between the import block and the rest of the file.
 
 ```ts
 if (isLocked) {

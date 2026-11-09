@@ -7,7 +7,6 @@ import { AvailableBalance } from "@/screens/transfer/components/AvailableBalance
 import { RecipientSection } from "@/screens/transfer/components/RecipientSection";
 import { TransferAmountField } from "@/screens/transfer/components/TransferAmountField";
 import { selectTransferLocked, useTransferStore } from "@/stores/transfer";
-
 import { useQuery } from "@tanstack/react-query";
 import { Redirect, router } from "expo-router";
 import { Keyboard } from "react-native";

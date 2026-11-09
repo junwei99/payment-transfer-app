@@ -8,7 +8,6 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
 import { DISPLAY_FONT } from "@/utils/display-font";
 
 export const Page = ({

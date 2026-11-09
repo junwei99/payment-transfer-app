@@ -12,12 +12,8 @@ export const TransferLookupStatus = ({ id }: { id: string }) => {
       {!id.trim() ? (
         <ErrorMessage message="No transfer ID was provided." />
       ) : null}
-      {id && transfer.isPending ? (
-        <Text>
-          {transfer.fetchStatus === "paused"
-            ? "Connect to load this transfer."
-            : "Loading transfer…"}
-        </Text>
+      {id && transfer.isPending && transfer.fetchStatus === "paused" ? (
+        <Text>Connect to load this transfer.</Text>
       ) : null}
       {transfer.error ? (
         <ErrorMessage message={transfer.error.message} />

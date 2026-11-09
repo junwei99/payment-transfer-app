@@ -89,6 +89,9 @@ reset or restart. Concurrent identical successful submissions debit only once.
 Response delays happen after processing. Closing the app or timing out a
 request does not undo a completed transfer. A delayed approval's five-minute
 lifetime starts when it is created, not when its response reaches the client.
+Ordinary API responses default to a one-second delay so the app's loading states
+are visible. Health and developer control endpoints remain immediate. The
+developer config endpoint can change the delay, and reset restores one second.
 
 ## Manual happy path
 

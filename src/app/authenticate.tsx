@@ -8,11 +8,12 @@ import { Text } from "react-native";
 import { useShallow } from "zustand/react/shallow";
 
 const AuthenticateScreen = () => {
-  const { reviewed, pending, issue, unresolved, completedId } =
+  const { reviewed, pending, pendingPhase, issue, unresolved, completedId } =
     useTransferStore(
       useShallow((state) => ({
         reviewed: state.reviewed,
         pending: state.pending,
+        pendingPhase: state.pendingPhase,
         issue: state.issue,
         unresolved: state.unresolved,
         completedId: state.completedId,
@@ -23,7 +24,9 @@ const AuthenticateScreen = () => {
   const locked = useTransferStore(selectTransferLocked);
 
   const authenticateBtnText = pending
-    ? "Processing…"
+    ? pendingPhase === "submission"
+      ? "Sending transfer…"
+      : "Approving transfer…"
     : unresolved
       ? "Retry transfer"
       : "Simulate authentication";
@@ -46,7 +49,9 @@ const AuthenticateScreen = () => {
     <Page
       title={
         pending
-          ? "Processing transfer"
+          ? pendingPhase === "submission"
+            ? "Sending transfer"
+            : "Approving transfer"
           : unresolved
             ? "Transfer status unknown"
             : "Simulated authentication"
@@ -54,7 +59,9 @@ const AuthenticateScreen = () => {
     >
       <Text accessibilityLiveRegion="polite" className="text-base text-ink">
         {pending
-          ? "Waiting for the service. Keep the app open."
+          ? pendingPhase === "submission"
+            ? "Sending transfer. Keep the app open."
+            : "Approving transfer. Keep the app open."
           : "Authentication is simulated. This does not use device security or collect credentials. Approval and payment are processed by the simulated backend."}
       </Text>
 
@@ -71,6 +78,7 @@ const AuthenticateScreen = () => {
       <Button
         label={authenticateBtnText}
         disabled={pending}
+        busy={pending}
         onPress={() => {
           void transfer();
         }}

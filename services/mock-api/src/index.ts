@@ -2,9 +2,9 @@ import { MockBank } from "./bank";
 import {
   ApiError,
   configRequest,
+  object,
   readJson,
   requiredString,
-  object,
   transferRequest,
 } from "./validation";
 
@@ -45,7 +45,6 @@ const route = (request: Request, path: string): TRoute | undefined => {
         method: "POST",
         handle: async () => {
           object(await readJson(request), []);
-
           return json(bank.account());
         },
       };

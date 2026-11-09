@@ -22,7 +22,7 @@ const defaultConfig = (): TMockConfig => {
   return {
     approvalOutcome: "approved",
     transferOutcome: "normal",
-    responseDelayMs: 0,
+    responseDelayMs: 1000,
   };
 };
 

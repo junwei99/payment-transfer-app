@@ -1,4 +1,5 @@
 import { Details } from "@/components/transfer/Details";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { transferOptions } from "@/query/banking";
 import { displayDetails } from "@/utils/transfer.utils";
 import { useQuery } from "@tanstack/react-query";
@@ -9,7 +10,9 @@ export const TransferReceipt = ({ id }: { id: string }) => {
   const completed = transfer.data;
 
   if (!completed) {
-    return null;
+    return id && transfer.isPending && transfer.fetchStatus !== "paused" ? (
+      <Skeleton label="Loading transfer…" rows={4} />
+    ) : null;
   }
 
   return (

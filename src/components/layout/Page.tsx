@@ -3,6 +3,7 @@ import { Image } from "expo-image";
 import {
   KeyboardAvoidingView,
   Platform,
+  RefreshControl,
   ScrollView,
   Text,
   View,
@@ -10,11 +11,20 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { DISPLAY_FONT } from "@/utils/display-font";
 
+type TPageProps = PropsWithChildren<{
+  title: string;
+  subtitle?: string;
+  refreshing?: boolean;
+  onRefresh?: () => void;
+}>;
+
 export const Page = ({
   title,
   subtitle,
   children,
-}: PropsWithChildren<{ title: string; subtitle?: string }>) => {
+  refreshing = false,
+  onRefresh,
+}: TPageProps) => {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#fafaf8" }}>
       <KeyboardAvoidingView
@@ -24,6 +34,11 @@ export const Page = ({
         <ScrollView
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={{ flexGrow: 1 }}
+          refreshControl={
+            onRefresh ? (
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            ) : undefined
+          }
         >
           <View className="mx-auto w-full max-w-xl flex-1 gap-8 px-6 pb-6 pt-4">
             <View className="gap-3">

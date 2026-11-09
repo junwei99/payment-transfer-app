@@ -5,7 +5,6 @@ import type {
 
 export const formatMinor = (minor: number) => {
   const digits = String(minor).padStart(3, "0");
-
   return `${digits.slice(0, -2)}.${digits.slice(-2)}`;
 };
 

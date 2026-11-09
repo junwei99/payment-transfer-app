@@ -45,6 +45,19 @@ export const retryRead = (count: number, error: Error) => {
         (failure.status >= 500 || failure.status === 429);
 };
 
+export const isConnectionError = (error: unknown) => {
+  if (!(error instanceof ServiceError)) {
+    return false;
+  }
+
+  const { failure } = error;
+
+  return (
+    failure.kind === "transport-error" &&
+    (failure.reason === "network" || failure.reason === "timeout")
+  );
+};
+
 export const ACCOUNT_OPTIONS = queryOptions({
   queryKey: ["account"],
   queryFn: ({ signal }) => unwrap(bankingService.getAccount({}, { signal })),

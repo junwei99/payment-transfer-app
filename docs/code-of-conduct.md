@@ -5,10 +5,10 @@ Native code.
 
 ## Type safety
 
-Agents must never use type casts or type assertions in project code, including
-tests and mocks. This ban includes `as Type`, `<Type>value`, double assertions
-such as `as unknown as Type`, and `as const`. There are no exceptions for
-compiler errors or library typing limitations.
+Hard type casts are strictly banned in project code, tests, and mocks. Never use
+`as Type`, `<Type>value`, or double assertions such as `as unknown as Type`,
+including to work around compiler errors or library typing limitations. `as const`
+is a const assertion for literal inference and readonly values, and is allowed.
 
 Use type inference, explicit type annotations, or `satisfies` to check values.
 Narrow uncertain types with runtime checks and validate external data at the

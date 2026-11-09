@@ -16,6 +16,7 @@ type TTransferState = {
   reviewed: TReviewedTransfer | null;
   completedId: string | null;
   pending: boolean;
+  pendingPhase: "approval" | "submission" | null;
   unresolved: TSubmission | null;
   fieldErrors: TFieldErrors;
   issue: string | null;
@@ -43,6 +44,7 @@ export const useTransferStore = create<TTransferState>()((set, get) => ({
   reviewed: null,
   completedId: null,
   pending: false,
+  pendingPhase: null,
   unresolved: null,
   fieldErrors: {},
   issue: null,

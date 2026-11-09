@@ -71,7 +71,7 @@ These are starting values to assess on device, not fixed heights that may clip t
 
 ## Motion and interaction
 
-Provide immediate touch feedback. Optional decorative transitions may be gentle (roughly 300–500ms), but must never delay actions. Avoid bounce, scaling, hover floats, and heavy effects. Respect the device's reduced-motion preference and retain clear static status feedback. Loading is accompanied by text.
+Provide immediate touch feedback. Optional decorative transitions may be gentle (roughly 300–500ms), but must never delay actions. Avoid bounce, scaling, hover floats, and heavy effects. Respect the device's reduced-motion preference and retain clear static status feedback. Home screen skeletons use static sage shapes with accessible loading labels and no visible loading copy. Other loading states retain visible status text.
 
 Use thin borders (up to one logical unit); subtle decorative opacity belongs on the border color, not the whole component. Avoid shadows, neon colors, gradients, glass effects, dark backgrounds, and decorative uppercase headings. Accessible focus indication may override decorative border restraint.
 

@@ -1,19 +1,27 @@
 import { Page } from "@/components/layout/Page";
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
+import { useOnline } from "@/hooks/useOnline";
 import { useReviewTransfer } from "@/hooks/useTransfer";
-import { ACCOUNT_OPTIONS } from "@/query/banking";
+import { ACCOUNT_OPTIONS, RECIPIENTS_OPTIONS } from "@/query/banking";
 import { AvailableBalance } from "@/screens/transfer/components/AvailableBalance";
 import { RecipientSection } from "@/screens/transfer/components/RecipientSection";
 import { TransferAmountField } from "@/screens/transfer/components/TransferAmountField";
 import { selectTransferLocked, useTransferStore } from "@/stores/transfer";
 import { useQuery } from "@tanstack/react-query";
 import { Redirect, router } from "expo-router";
+import { useRef, useState } from "react";
 import { Keyboard } from "react-native";
 import { useShallow } from "zustand/react/shallow";
 
 const TransferScreen = () => {
   const account = useQuery(ACCOUNT_OPTIONS);
+  const recipients = useQuery(RECIPIENTS_OPTIONS);
+
+  const isOnline = useOnline();
+
+  const [refreshing, setRefreshing] = useState(false);
+  const refreshInProgress = useRef(false);
 
   const { note, setDraft, noteError } = useTransferStore(
     useShallow((state) => ({
@@ -24,7 +32,28 @@ const TransferScreen = () => {
   );
 
   const locked = useTransferStore(selectTransferLocked);
+
   const review = useReviewTransfer();
+
+  const refresh = async () => {
+    if (refreshInProgress.current) {
+      return;
+    }
+
+    if (!isOnline) {
+      return;
+    }
+
+    refreshInProgress.current = true;
+    setRefreshing(true);
+
+    try {
+      await Promise.allSettled([account.refetch(), recipients.refetch()]);
+    } finally {
+      refreshInProgress.current = false;
+      setRefreshing(false);
+    }
+  };
 
   if (locked) {
     return <Redirect href="/authenticate" />;
@@ -34,9 +63,12 @@ const TransferScreen = () => {
     <Page
       title="Make a transfer"
       subtitle="Choose a recipient and add a personal note."
+      refreshing={refreshing && isOnline}
+      onRefresh={() => {
+        void refresh();
+      }}
     >
       <AvailableBalance />
-
       <RecipientSection />
       <TransferAmountField />
       <Field
@@ -47,7 +79,6 @@ const TransferScreen = () => {
         error={noteError}
         multiline
       />
-
       <Button
         label="Review transfer"
         disabled={!account.data}

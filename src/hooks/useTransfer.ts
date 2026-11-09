@@ -69,7 +69,11 @@ export const useSubmitTransfer = () => {
       return;
     }
 
-    useTransferStore.setState({ pending: true, issue: null });
+    useTransferStore.setState({
+      pending: true,
+      pendingPhase: "approval",
+      issue: null,
+    });
 
     try {
       requireOnline();
@@ -88,6 +92,8 @@ export const useSubmitTransfer = () => {
 
         useTransferStore.setState({ unresolved: body });
       }
+
+      useTransferStore.setState({ pendingPhase: "submission" });
 
       const completed = await submission.mutateAsync(body);
 
@@ -120,7 +126,7 @@ export const useSubmitTransfer = () => {
       approval.reset();
       submission.reset();
 
-      useTransferStore.setState({ pending: false });
+      useTransferStore.setState({ pending: false, pendingPhase: null });
     }
   };
 

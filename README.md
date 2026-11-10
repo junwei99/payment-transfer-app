@@ -70,17 +70,16 @@ the identical request.
 
 ## Technical design decisions
 
-#### A payment executes at most once, however it is retried
+#### A payment executes at most once
 
-- Two identities protect one payment: an approval, bound to the reviewed details
-  and consumed on success, and an idempotency key that identifies the submission.
-  Resending the same key and body returns the original receipt, never a second
-  debit.
-- Nothing retries on its own. A timeout, dropped connection, 5xx, or unreadable body
-  is an unknown outcome, so the app keeps the exact request and offers one action:
-  send that same request again.
-- Changing the payment means a new approval and a new key, so one key can never
-  cover two different payments.
+- An approval is bound to the reviewed details and consumed on success. An
+  idempotency key identifies the submission. Replaying the same key and body
+  returns the original receipt.
+- Nothing retries on its own. A timeout, dropped connection, 5xx, or unreadable
+  body is an unknown outcome, so the app keeps the exact request and offers one
+  retry.
+- Changing the payment creates a new approval and a new key, so one key covers
+  one payment.
 
 | Request arriving at the service | Result                                |
 | ------------------------------- | ------------------------------------- |
@@ -88,45 +87,26 @@ the identical request.
 | Known key, different body       | `409`, no debit                       |
 | Unknown key, valid approval     | One debit, `201`                      |
 
-#### Every journey change goes through one typed dispatch
+#### One dispatch owns every journey change
 
-- `dispatch` is the only writer. It passes the current journey and an action to
-  `transitionJourney`, a pure switch with one case per action, then stores the
-  result. A missing `case` fails `tsc`.
-- The switch returns the next journey, or `null` when the action is not allowed from
-  that state. `dispatch` returns `true` or `false`, and callers check it before the
-  side effect, so a refused action cannot still send a request.
-- Actions describe intent and carry its payload. The store derives the rest: retry
-  reuses the stored submission, and a rejection rebuilds an editable draft without
-  the approval ID or idempotency key.
+- `dispatch` is the only writer. It calls the pure `transitionJourney` switch and
+  stores the accepted result. A missing case fails `tsc`.
+- It returns `false` when an action is not allowed and leaves state unchanged.
+  Callers check the result before sending a request or resetting the form.
+- Actions describe intent. The store derives the next state: retry reuses the
+  stored submission, and rejection rebuilds an editable draft without the
+  approval ID or key.
 
 ```ts
 // src/stores/transfer.ts
-const transitionJourney = (
-  journey: TTransferJourney,
-  action: TTransferAction,
-): TTransferJourney | null => {
-  switch (action.type) {
-    case "REVIEW":
-      if (selectTransferLocked({ journey })) {
-        return null; // payment in flight, so the edit is refused
-      }
-
-      return { status: "REVIEWED", details: action.details };
-    // ...one case per action
-  }
-};
-
-// inside the Zustand store: one writer, one boolean
 dispatch: (action) => {
   const next = transitionJourney(get().journey, action);
 
   if (next === null) {
-    return false; // blocked, state untouched
+    return false; // blocked, state unchanged
   }
 
   set({ journey: next });
-
   return true;
 },
 ```
@@ -134,60 +114,58 @@ dispatch: (action) => {
 ```ts
 // src/hooks/useSubmitTransfer.ts
 if (!dispatch({ type: "START_APPROVAL", attemptId })) {
-  return; // refused, so no approval request goes out
+  return; // no approval request
 }
 ```
 
-#### API Endpoint Registry
+#### One registry defines every API contract
 
-- One entry per endpoint holds the request, success, and error schemas, and the
-  requestor only accepts registered paths. A contract change has one place to land.
-- Types are inferred from those schemas, and the same schemas parse the response at
-  runtime, so a payload that drifts fails as a parse error rather than entering the
-  app with a type it does not have.
-- The requestor parses non-2xx bodies and throws a typed `ServiceError` itself, so
-  every caller sees a classified failure instead of a raw Axios response.
-- Each endpoint's error schema types its business failures, so callers read `code`,
-  `message`, and `retryAt` without re-validating or asserting.
+- Each endpoint has one entry with request, success, and error schemas. The
+  requestor only accepts registered paths.
+- Types come from those schemas, and the same schemas validate responses at
+  runtime, so drift becomes a parse error.
+- The requestor parses non-2xx bodies and throws a typed `ServiceError`. Callers
+  read `code`, `message`, and `retryAt` without casting.
 
 ```ts
 // src/schemas/apis/submit-transfer.schema.ts
 export const SUBMIT_TRANSFER_API_SCHEMA = {
-  request: SUBMIT_TRANSFER_REQ_SCHEMA, // what the client may send
-  successResponse: SUBMIT_TRANSFER_RES_SCHEMA, // 2xx body, returned typed
-  errResponse: SUBMIT_TRANSFER_ERR_RESPONSE_SCHEMA, // non-2xx body, typed
+  request: SUBMIT_TRANSFER_REQ_SCHEMA,
+  successResponse: SUBMIT_TRANSFER_RES_SCHEMA,
+  errResponse: SUBMIT_TRANSFER_ERR_RESPONSE_SCHEMA,
 };
 
 // src/schemas/api.schema.ts
 export const API_SCHEMA = {
   "/transfers": SUBMIT_TRANSFER_API_SCHEMA,
   "/transfers/lookup": GET_TRANSFER_API_SCHEMA,
-} as const; // each entry declares request, success, and error schemas
-
-// src/services/index.services.ts
-const submitTransfer = requestor.createRequest("/transfers");
-// body: z.input<request>; result: z.output<successResponse>; throws ServiceError
-```
-
-```ts
-// src/hooks/useSubmitTransfer.ts
-if (error instanceof ServiceError && error.failure.kind === "api-error") {
-  // typed by /transfers' error schema, not a generic Error
-  error.failure.error.error.code; // e.g. "INSUFFICIENT_FUNDS"
-}
+} as const;
 ```
 
 ## Business requirements decisions
 
-#### No automatic retry and no offline queue for payments
+#### A lost response is not a failure
 
-- A retried payment can debit twice.
-- Cost: the user has to act.
+- The app cannot tell whether the money moved, so it marks the result unknown
+  and keeps the exact request. Edits and new transfers stay blocked until the
+  customer chooses retry.
+- Nothing retries automatically, including on reconnect. Retry sends the same
+  request, so the bank can return the original receipt instead of debiting twice.
 
-#### A submission's outcome is classified from the validated error contract
+#### Every payment needs a new approval
 
-- A timeout or a 5xx is unknown, which is different from a rejection.
-- Cost: depends on the service keeping a documented error taxonomy.
+- A biometric prompt or the bank PIN approves one reviewed transfer. Changing
+  the recipient, amount, currency, or note, or letting the five-minute approval
+  expire, requires authenticating again.
+- The phone's passcode is not accepted. The service counts wrong PIN attempts,
+  so five wrong entries trigger a 30-second cooldown across devices.
+
+#### The bank decides success and balance
+
+- A transfer is complete only when the bank returns a valid receipt. A failed
+  balance refresh is shown separately and does not undo the receipt.
+- The app can warn about a low balance, but the bank checks the real balance at
+  submission. It never invents a balance or shows success early.
 
 ## Challenges
 

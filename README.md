@@ -147,6 +147,25 @@ Main challenge faced during this assessment is mainly due to unfamiliarity to th
 
 Another challenge I faced is the time constraint, although the requirements look simple at first glance, the implementation took longer than expected due to all the negative flow handlings that comes with the feature.
 
+## Prerequisites
+
+- Node.js 22.13 or later and pnpm
+- Bun 1.2.11 or later, for the mock service
+- `cloudflared`, so a simulator or device can reach the local service
+- Xcode with a simulator, or Android Studio with an emulator. The app needs a
+  native build (`expo run:*`), not Expo Go
+
+## Demo credentials and defaults
+
+- Banking PIN `111111`, for the fallback when biometrics are unavailable or
+  cancelled
+- Starting balance MYR 5,000. The mock service keeps everything in memory, so a
+  restart resets the balance, recipients, approvals, and transfer history
+- Biometrics need an enrolled Face ID or fingerprint. In the iOS simulator,
+  enrol with Features → Face ID → Enrolled
+- The tunnel URL changes every time `cloudflared` starts; update `.env.local`
+  and restart Expo when it does
+
 ## Run it
 
 Install the dependencies and copy the environment file:

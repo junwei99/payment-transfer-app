@@ -9,7 +9,14 @@ type TTransferAction =
   | { type: "REVIEW"; details: TReviewedTransfer }
   | { type: "INVALIDATE_REVIEW" }
   | { type: "RESET" }
-  | { type: "START_APPROVAL" }
+  | {
+      type: "START_AUTHENTICATION";
+      attemptId: string;
+      method: "biometric" | "pin";
+    }
+  | { type: "CANCEL_AUTHENTICATION"; attemptId: string }
+  | { type: "START_APPROVAL"; attemptId: string }
+  | { type: "PIN_REJECTED"; attemptId: string }
   | {
       type: "APPROVAL_SUCCEEDED";
       approvalId: string;
@@ -27,6 +34,7 @@ type TTransferState = {
 };
 
 export const selectTransferLocked = (state: { journey: TTransferJourney }) =>
+  state.journey.status === "AUTHENTICATING" ||
   state.journey.status === "APPROVING" ||
   state.journey.status === "SUBMITTING" ||
   state.journey.status === "UNRESOLVED";
@@ -51,12 +59,47 @@ const transitionJourney = (
 
       return { status: "IDLE" };
     }
-    case "START_APPROVAL": {
+    case "START_AUTHENTICATION": {
       if (journey.status !== "REVIEWED" && journey.status !== "REJECTED") {
         return null;
       }
 
-      return { status: "APPROVING", details: journey.details };
+      return {
+        status: "AUTHENTICATING",
+        details: journey.details,
+        attemptId: action.attemptId,
+        method: action.method,
+      };
+    }
+    case "CANCEL_AUTHENTICATION": {
+      if (
+        journey.status !== "AUTHENTICATING" ||
+        journey.attemptId !== action.attemptId
+      ) {
+        return null;
+      }
+
+      return { status: "REVIEWED", details: journey.details };
+    }
+    case "START_APPROVAL": {
+      if (
+        journey.status !== "AUTHENTICATING" ||
+        journey.attemptId !== action.attemptId
+      ) {
+        return null;
+      }
+
+      return { ...journey, status: "APPROVING" };
+    }
+    case "PIN_REJECTED": {
+      if (
+        journey.status !== "APPROVING" ||
+        journey.attemptId !== action.attemptId
+      ) {
+        return null;
+      }
+
+      return { ...journey, status: "AUTHENTICATING" };
     }
     case "APPROVAL_SUCCEEDED": {
       if (journey.status !== "APPROVING") {

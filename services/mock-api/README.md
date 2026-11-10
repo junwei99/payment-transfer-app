@@ -1,6 +1,6 @@
 # Mock transfer API
 
-A standalone Bun TypeScript service for local development and assessment demos.
+A standalone Bun TypeScript service for local development and app demos.
 It owns a shared demo account, recipients, transfer approvals, and completed
 transfers in memory. The mobile app uses TanStack Query and the Axios/Zod client
 to read this service and submit transfers.
@@ -16,8 +16,8 @@ bun run dev
 ```
 
 `bun run start` runs without watching files. `bun run typecheck` checks this
-service independently of Expo. There are no runtime dependencies or automated
-tests. Developers verify behavior manually using the examples below.
+service independently of Expo. There are no runtime dependencies. Developers
+verify API behavior using the examples below.
 
 The default address is `0.0.0.0:3001`. Override it with `HOST` and `PORT`:
 
@@ -32,7 +32,7 @@ demo service.
 
 ## API contract
 
-All eight endpoints use POST. Reads, health, and reset require `{}` bodies;
+All endpoints use POST. Reads, health, and reset require `{}` bodies;
 lookup requires `{ "id": "TRANSFER_ID" }`. GET/PUT aliases are removed.
 Send JSON bodies with `Content-Type: application/json`. Responses are JSON with
 `Cache-Control: no-store`. Currency is `MYR`, money uses integer minor units
@@ -49,14 +49,15 @@ Send JSON bodies with `Content-Type: application/json`. Responses are JSON with
 | POST   | `/__mock/reset`            | `200` with restored `account` and default `config`                |
 | POST   | `/__mock/config`           | `200` with the resulting config; accepts partial updates          |
 
-Authorization requests contain these transfer details:
+Authorization requests contain these transfer details and authentication:
 
 ```json
 {
   "recipient": { "name": "Aina Rahman", "account": "1234567890" },
   "amountMinor": 12000,
   "currency": "MYR",
-  "note": "Lunch"
+  "note": "Lunch",
+  "authentication": { "method": "pin", "pin": "111111" }
 }
 ```
 
@@ -66,14 +67,27 @@ are trimmed. `amountMinor` must be a positive safe integer, and `note` is option
 with a maximum of 200 characters. An omitted note becomes an empty string.
 Recipients can be entered manually and do not have to match a seeded contact.
 
-Submission requests contain the same details plus `approvalId` and a required
+Submission requests contain transfer details without `authentication`, plus `approvalId` and a required
 `idempotencyKey` body field of 1–200 nonblank characters. A successful response has
 the transfer details plus `id`, `reference`, `status: "completed"`, and `createdAt`.
 
-The authorization endpoint simulates the backend's decision after device
-authentication. It accepts transfer details, without biometric data, a device
-passcode, or scenario flags. This service does not implement cryptographic
-verification of device authentication or app login.
+`POST /transfer-authorizations` checks the fixed demo PIN `111111` and
+issues approval in the same request. Wrong PINs return `403 PIN_INCORRECT`; the
+fifth failure and subsequent attempts return `429 PIN_LOCKED` with an ISO
+`error.retryAt`. The 30-second cooldown is enforced in memory for the shared demo
+account across all devices. Successful PIN verification or cooldown expiry resets
+failures; mobile app restart does not. Backend reset/restart clears attempts.
+
+After native biometric success, the app instead sends
+`"authentication": { "method": "biometric", "success": true }`.
+The API rejects missing authentication, malformed PINs, unsuccessful biometric
+results, and mixed credentials. The PIN and biometric result never appear in
+transfer submission or receipt records.
+
+The biometric result is client-declared, not cryptographic proof. A caller can
+send success directly, so this demo does not provide production authentication.
+The service does not implement app login, enrollment, secure credential storage,
+or production biometric proof verification. Use this API only for local demos.
 
 Approvals expire after five minutes and bind to the normalized recipient,
 amount, currency, and note. A successful submission consumes its approval.
@@ -105,15 +119,15 @@ curl -i -X POST "$API/account" -H 'Content-Type: application/json' -d '{}'
 curl -i -X POST "$API/recipients" -H 'Content-Type: application/json' -d '{}'
 ```
 
-Request approval for MYR 120:
+Request approval for MYR 120 using the PIN:
 
 ```sh
 curl -i "$API/transfer-authorizations" \
   -H 'Content-Type: application/json' \
-  -d '{"recipient":{"name":"Aina Rahman","account":"1234567890"},"amountMinor":12000,"currency":"MYR","note":"Lunch"}'
+  -d '{"recipient":{"name":"Aina Rahman","account":"1234567890"},"amountMinor":12000,"currency":"MYR","note":"Lunch","authentication":{"method":"pin","pin":"111111"}}'
 ```
 
-Copy `approvalId` from the response into the following body:
+Copy `approvalId` from that response into the following body:
 
 ```sh
 curl -i "$API/transfers" \
@@ -145,7 +159,7 @@ curl -i "$API/transfer-authorizations" \
 ```
 
 Also try a blank name, a nine-digit account, a fractional amount, another
-currency, an oversized note, and an unexpected field. Malformed JSON returns
+currency, an oversized note, and an unexpected field. Include an authentication method in authorization requests. Malformed JSON returns
 `400 INVALID_JSON`; a non-JSON content type returns `415 UNSUPPORTED_MEDIA_TYPE`.
 
 For real insufficient funds, approve a valid transfer of `500001` minor units
@@ -168,7 +182,8 @@ curl -i -X POST "$API/__mock/config" \
   -d '{"approvalOutcome":"cancelled"}'
 ```
 
-Repeat the authorization request to see `403 AUTHENTICATION_CANCELLED`. Choose
+Include the PIN or simulated successful biometric result in each authorization
+request. Repeat the authorization request to see `403 AUTHENTICATION_CANCELLED`. Choose
 `unavailable` for `503 AUTHENTICATION_UNAVAILABLE`, `rejected` for
 `403 AUTHENTICATION_REJECTED`, and `approved` to restore approval success.
 These outcomes continue until reconfigured or reset; they do not consume a
@@ -213,7 +228,7 @@ curl -i -X POST "$API/__mock/reset" -H 'Content-Type: application/json' -d '{}'
 ```
 
 Reset restores balance and default config, and clears completed transfers,
-approvals, and idempotency records. Retrieval of an old transfer now returns
+approvals, PIN attempts, and idempotency records. Retrieval of an old transfer now returns
 `404 TRANSFER_NOT_FOUND`. Reset while no requests are in flight: already
 processed delayed requests can still deliver their earlier responses.
 
@@ -228,17 +243,18 @@ processed delayed requests can still deliver their earlier responses.
 }
 ```
 
-| HTTP status | Codes                                                                                          |
-| ----------- | ---------------------------------------------------------------------------------------------- |
-| 400         | `VALIDATION_ERROR`, `INVALID_JSON`                                                             |
-| 403         | `AUTHENTICATION_CANCELLED`, `AUTHENTICATION_REJECTED`, `APPROVAL_INVALID`, `APPROVAL_MISMATCH` |
-| 404         | `NOT_FOUND`, `TRANSFER_NOT_FOUND`                                                              |
-| 405         | `METHOD_NOT_ALLOWED` (includes the `Allow` header)                                             |
-| 409         | `IDEMPOTENCY_CONFLICT`, `APPROVAL_CONSUMED`                                                    |
-| 415         | `UNSUPPORTED_MEDIA_TYPE`                                                                       |
-| 422         | `INSUFFICIENT_FUNDS`                                                                           |
-| 500         | `INTERNAL_ERROR`, `REQUEST_FAILED`                                                             |
-| 503         | `AUTHENTICATION_UNAVAILABLE`, `TRANSFER_UNAVAILABLE`                                           |
+| HTTP status | Codes                                                                                                           |
+| ----------- | --------------------------------------------------------------------------------------------------------------- |
+| 400         | `VALIDATION_ERROR`, `INVALID_JSON`                                                                              |
+| 403         | `AUTHENTICATION_CANCELLED`, `AUTHENTICATION_REJECTED`, `APPROVAL_INVALID`, `APPROVAL_MISMATCH`, `PIN_INCORRECT` |
+| 429         | `PIN_LOCKED` (includes `error.retryAt`)                                                                         |
+| 404         | `NOT_FOUND`, `TRANSFER_NOT_FOUND`                                                                               |
+| 405         | `METHOD_NOT_ALLOWED` (includes the `Allow` header)                                                              |
+| 409         | `IDEMPOTENCY_CONFLICT`, `APPROVAL_CONSUMED`                                                                     |
+| 415         | `UNSUPPORTED_MEDIA_TYPE`                                                                                        |
+| 422         | `INSUFFICIENT_FUNDS`                                                                                            |
+| 500         | `INTERNAL_ERROR`, `REQUEST_FAILED`                                                                              |
+| 503         | `AUTHENTICATION_UNAVAILABLE`, `TRANSFER_UNAVAILABLE`                                                            |
 
 Scripted service failures return HTTP responses. To verify an actual connection
 failure, stop the service or use an unreachable address.
@@ -252,7 +268,7 @@ network. Use the default `0.0.0.0` binding for emulator and LAN connections.
 Expo's Metro address or tunnel does not forward this separate service.
 
 Set `EXPO_PUBLIC_API_URL` in the root `.env.local`; see the root README.
-The screens use the API through TanStack Query; authentication remains simulated.
+The screens use the API through TanStack Query; PIN verification is server-side and biometric proof remains simulated.
 
 ## Runtime references
 

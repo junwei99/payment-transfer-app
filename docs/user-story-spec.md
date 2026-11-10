@@ -5,8 +5,8 @@ Status: ready-for-agent
 ## Authority and scope
 
 This document defines the agreed finished product alongside the
-[original assessment requirements](requirements.md). Use both throughout
-development. The original requirements define the assignment; this specification
+[original product requirements](requirements.md). Use both throughout
+development. The original requirements define the product requirements; this specification
 resolves product behaviour, acceptance criteria, and agreed scope choices.
 Raise conflicts between them explicitly rather than silently choosing one.
 
@@ -24,7 +24,7 @@ Future scope changes should update this specification explicitly.
 
 A mobile bank customer needs to send money to a recipient, understand how much
 is available to send, review the destination and amount, and approve the payment
-using device security. The customer needs clear feedback when input is invalid,
+using real biometrics or the demo banking PIN. The customer needs clear feedback when input is invalid,
 authentication is cancelled, funds are insufficient, or connectivity fails.
 
 A lost response must not misleadingly imply that no money moved or encourage an
@@ -35,7 +35,7 @@ when a later balance refresh fails.
 
 Provide an iOS and Android payment transfer flow for one MYR account. The customer
 selects or enters a recipient, enters an amount and optional note, reviews the
-details, and confirms using biometrics or the supported device-credential
+details, and confirms using biometrics or the demo banking PIN
 fallback. Following successful authentication, the app requests transfer approval
 and submits the transfer to the standalone simulated backend.
 
@@ -78,17 +78,17 @@ No sign-in or account switching is required. A visible demo banner is not requir
 22. As a customer, I want to return from review and edit my details without losing them, so that correcting a mistake is straightforward.
 23. As a customer, I want authentication to start when I confirm the reviewed transfer, so that the prompt is tied to my intent to send.
 24. As a customer, I want to authenticate using my device's supported biometrics, so that I can approve the transfer through device security.
-25. As a customer, I want a supported device passcode, PIN, or pattern fallback, so that I can authenticate when biometrics cannot be used.
-26. As a customer, I want credentials handled by the operating system, so that I do not enter my device credential into an app-owned form.
+25. As a customer, I want a demo banking PIN fallback, so that I can authenticate when biometrics cannot be used.
+26. As a customer, I want biometrics handled by the operating system and banking PIN entry clearly distinguished, so that I never enter my device credential into the app.
 27. As a customer, I want cancelling authentication to return me to review with my details intact, so that I can decide whether to try again.
 28. As a customer, I want understandable feedback after failed or unavailable authentication, so that I can retry or use the supported fallback.
-29. As a customer, I want guidance when no usable device security is configured, so that I know why sending is blocked.
+29. As a customer, I want banking PIN entry when no usable device security is configured, so that I can complete the transfer flow.
 30. As a customer, I want changed transfer details to require fresh authentication and approval, so that my earlier approval cannot send a different payment.
 31. As a customer, I want an expired approval to require a fresh authentication and approval step, so that I can resume sending the reviewed payment safely.
 
 ### Submission and error recovery
 
-32. As a customer, I want the app to request transfer approval only after successful device authentication, so that cancelling authentication cannot send money.
+32. As a customer, I want the app to request transfer approval only after successful biometric or demo banking PIN authentication, so that cancelling authentication cannot send money.
 33. As a customer, I want a clear error when transfer approval is rejected or unavailable, so that I know submission has not proceeded.
 34. As a customer, I want visible progress while approval and submission run, so that I know the app is processing my action.
 35. As a customer, I want repeated taps prevented from creating multiple submissions, so that I do not accidentally send twice.
@@ -169,20 +169,55 @@ No sign-in or account switching is required. A visible demo banner is not requir
 
 ### Device authentication and transfer approval
 
+Use real device biometrics with a backend-verified demo banking PIN of `111111`.
+PIN setup, recovery, and production verification are out of scope.
+`POST /transfer-authorizations` receives reviewed details and an authentication
+object: `{ "method": "pin", "pin": "111111" }` or
+`{ "method": "biometric", "success": true }`. The backend verifies the PIN and
+enforces attempt limits before issuing approval in the same request. No separate
+PIN verification endpoint or intermediate proof is used. Never log or persist
+credentials, or include them in journey state, Query mutation variables, or
+transfer submission payloads. Biometric success remains a client-declared backend
+simulation. Document demo limitations and setup instructions in the README.
+
+The demo PIN remains available without enrolled biometrics or a device screen
+lock. Start with biometrics when available, with an explicit banking-PIN
+alternative; offer PIN directly when biometrics are unavailable or locked out.
+Cancellation returns to review with details preserved rather than automatically
+opening PIN entry.
+
+PIN entry is masked, accepts six numeric digits, and requires an explicit Confirm
+transfer action enabled only after six digits. Prevent duplicate submissions and
+clear the PIN on exit and after incorrect entry. Five incorrect attempts trigger
+a server-enforced 30-second cooldown shared by the demo account across devices.
+App restarts do not reset it; backend restart or reset does. Preserve the transfer details and display
+clear failure feedback. Document the demo PIN in the README.
+
+Leaving the app during authentication abandons the attempt and requires fresh
+authentication on return, preserving transfer details. The native biometric
+prompt itself must not be mistaken for leaving the app. Already-submitted
+transfers retain their existing recovery behavior. Each new transfer requires
+fresh authentication; app login and remembered authentication are out of scope.
+
+The cooldown blocks PIN attempts only; biometrics remain available. Keep failed
+attempt counts on the backend, resetting after successful PIN verification or
+cooldown expiry. Require strong Android biometrics. Failed, timed-out, or
+interrupted biometrics offer retry, PIN, or Back to review as applicable.
+PIN confirmation or successful native biometrics requests approval and submits without
+another confirmation. Approval failure requires fresh authentication on retry.
+See the [implementation handoff](../.scratch/device-authentication/spec.md).
+
 - The normal sequence is entry, review, Confirm transfer, device authentication,
   API transfer approval, submission, and confirmation.
-- Use real operating-system biometric prompts on supported devices. Offer the
-  supported device passcode, PIN, or pattern fallback when biometrics cannot be
-  used. Do not implement a custom banking PIN or app-owned device-credential form.
-- If no usable authentication method is configured or available, block sending
-  and explain how the user can address device security. Preserve the draft.
-  Never replace unavailable authentication with a simulated-success button.
-- Cancellation returns to review without approval or submission calls. Failed,
-  interrupted, or timed-out authentication cannot count as success. Provide retry
-  or supported fallback as appropriate; let the OS enforce attempt limits/lockout.
+- Use real operating-system biometric prompts, with the app's demo PIN as the
+  alternative. Do not collect device screen-lock credentials or enable OS
+  device-credential fallback as a third authentication method.
+- Cancellation returns to review without approval or submission. Failed,
+  interrupted, or timed-out authentication cannot count as success. The OS
+  controls biometric attempt limits and lockout; the backend controls demo PIN limits.
 - Prevent repeated confirmation actions from launching overlapping authentication,
   approval, or submission flows.
-- Request API transfer approval only after successful authentication. An approval
+- Request API transfer approval with PIN input or a successful native biometric result. An approval
   failure ends that attempt before submission and displays an actionable error.
 - Transfer approval binds the reviewed recipient, amount, currency, and note. The
   existing service issues five-minute approvals; the returned expiry is authoritative.
@@ -281,19 +316,17 @@ No sign-in or account switching is required. A visible demo banner is not requir
   reads. Transfer lookup takes a transfer ID; submission carries its idempotency
   key in the body. There is no lookup by idempotency key.
 - The banking service exposes account, recipients, transfer approval, submission,
-  and transfer lookup. Health, scenario configuration, and backend reset are
+  PIN verification, and transfer lookup. Health, scenario configuration, and backend reset are
   developer operations and are not exposed as customer UI actions.
 - Use integer minor units for money. Infer client API types from schemas and keep
-  presentation formatting separate from wire values. No backend contract expansion
+  presentation formatting separate from wire values. No further backend contract expansion
   is required for the agreed product scope.
 - Retain the standalone simulated backend as the owner of balance, approval,
   transfer, and replay records. Remove client mock gateways, fixed receipts,
-  scripted authentication, scenario controls, and runtime mock fallback data.
+  scripted biometric success, scenario controls, and runtime mock fallback data.
 - Integrate device authentication using an Expo-compatible native capability;
   configure native behaviour through app configuration/plugins. Check the installed
-  Expo version and corresponding documentation before selecting APIs. Validate
-  fallback on supported devices rather than assuming biometric availability alone
-  determines whether device credentials can be used.
+  Expo version and corresponding documentation before selecting APIs. Validate real biometrics and the demo PIN fallback on both platforms.
 - Clear authentication and approval eligibility when reviewed details change.
   Preserve an already-submitted request separately until its result is resolved.
 
@@ -325,8 +358,8 @@ Query integration, submission recovery, receipt, and mobile presentation modules
 | Normalized input and invalid input                                      | Leading zeros survive; accepted decimal forms show the intended amount; invalid precision is not rounded; note rules match the API. |
 | Review, Back, and edits                                                 | Draft survives; review matches submitted details; edits require fresh authentication/approval.                                      |
 | Biometric success on iOS and Android                                    | A real OS prompt precedes approval and submission.                                                                                  |
-| Device-credential fallback                                              | Supported OS credential authentication succeeds without an app-owned credential form.                                               |
-| Cancellation, failure, interruption, lockout, or no device security     | No submission occurs without success; details survive; retry/fallback or configuration guidance is appropriate.                     |
+| Demo banking PIN fallback                                               | App PIN 111111 succeeds, including without device security; incorrect PIN and cooldown behave as specified.                         |
+| Cancellation, failure, interruption, lockout, or no device security     | No submission occurs without success; details survive; explicit retry or banking PIN fallback is appropriate.                       |
 | Approval failure or expiry                                              | No unapproved submission; clear error or fresh authentication/approval step.                                                        |
 | Insufficient funds                                                      | Clear rejection; no debit; details remain available for correction.                                                                 |
 | Repeated Confirm/Retry taps                                             | Only one active attempt and no duplicate completed payment.                                                                         |
@@ -350,9 +383,9 @@ native authentication or recovery scenarios passed.
 
 - App sign-in, registration, account switching, multiple accounts, and other currencies.
 - Contact-list integration and recent transfer history, including quick re-send.
-  These remain optional stretch goals from the original assignment.
+  These remain optional stretch goals from the original requirements.
 - Bank selection, recipient ownership verification, transfer fees, and daily limits.
-- Custom banking PINs, app-collected device credentials, and production identity
+- Banking PIN enrollment, changes, recovery, app-collected device credentials, and production identity
   verification or cryptographic biometric attestation by the simulated backend.
 - Persistent drafts, secure storage of submissions, recovery after app termination,
   persistent Query caches, offline payment queues, and multiple unresolved transfers.
@@ -360,13 +393,13 @@ native authentication or recovery scenarios passed.
 - Automated tests or a new test framework.
 - Repository submission/access, commit-history criteria, setup-document delivery,
   a design write-up, and a demo video as acceptance criteria of this product spec.
-  The original assignment still contains those submission instructions; excluding
+  The original requirements still contains those submission instructions; excluding
   them here does not remove them from the original document.
 
 ## Further Notes
 
-- The backend simulates payments and does not move real money. Device authentication
-  is real. No visible demo banner is required, but copy must not invent guarantees
+- The backend simulates payments and does not move real money. Biometric authentication
+  is real; the fixed banking PIN is an demo simulation. No visible demo banner is required, but copy must not invent guarantees
   about real bank processing or verified recipient ownership.
 - Backend state is shared by clients using that service and is held in memory.
   Restarting or resetting the service removes approvals, receipts, and idempotency
@@ -374,7 +407,7 @@ native authentication or recovery scenarios passed.
   they do not survive a backend reset. Do not reset the backend during a recovery
   verification scenario.
 - Closing the app loses unresolved recovery information even if the server has
-  completed the payment. This is an accepted assessment limitation, not a promise
+  completed the payment. This is an accepted demo limitation, not a promise
   of durable payment recovery.
 - Existing prototype screens and earlier phase plans are implementation references,
   not evidence that any acceptance criterion has passed. This specification

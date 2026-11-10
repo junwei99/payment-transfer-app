@@ -1,10 +1,13 @@
 import type { TApiResult } from "@/schemas/api.schema";
 import { bankingService } from "@/services/index.services";
-import type { TReviewedTransfer, TSubmission } from "@/types/transfer.types";
+import type { TSubmission } from "@/types/transfer.types";
 import { mutationOptions, queryOptions } from "@tanstack/react-query";
 
 type TFailure = Exclude<
-  TApiResult<never, { error: { code: string; message: string } }>,
+  TApiResult<
+    never,
+    { error: { code: string; message: string; retryAt?: string } }
+  >,
   { kind: "success" }
 >;
 
@@ -22,7 +25,12 @@ export class ServiceError extends Error {
 }
 
 export const unwrap = async <T>(
-  result: Promise<TApiResult<T, { error: { code: string; message: string } }>>,
+  result: Promise<
+    TApiResult<
+      T,
+      { error: { code: string; message: string; retryAt?: string } }
+    >
+  >,
 ) => {
   const response = await result;
 
@@ -71,14 +79,6 @@ export const RECIPIENTS_OPTIONS = queryOptions({
   queryFn: ({ signal }) => unwrap(bankingService.getRecipients({}, { signal })),
   staleTime: 5 * 60 * 1000,
   retry: retryRead,
-});
-
-export const AUTHORIZE_TRANSFER_OPTIONS = mutationOptions({
-  mutationFn: (details: TReviewedTransfer) =>
-    unwrap(bankingService.authorizeTransfer(details)),
-  retry: false,
-  networkMode: "always",
-  gcTime: 0,
 });
 
 export const SUBMIT_TRANSFER_OPTIONS = mutationOptions({

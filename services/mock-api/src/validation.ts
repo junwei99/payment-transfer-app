@@ -3,6 +3,7 @@ export class ApiError extends Error {
     public readonly status: number,
     public readonly code: string,
     message: string,
+    public readonly retryAt?: string,
   ) {
     super(message);
   }
@@ -25,11 +26,14 @@ const invalid: (message: string) => never = (message: string) => {
   throw new ApiError(400, "VALIDATION_ERROR", message);
 };
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  value !== null && typeof value === "object" && !Array.isArray(value);
+
 export const object = (
   value: unknown,
   allowedKeys: string[],
 ): Record<string, unknown> => {
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+  if (!isRecord(value)) {
     invalid("Expected a JSON object.");
   }
 
@@ -39,7 +43,7 @@ export const object = (
     }
   }
 
-  return value as Record<string, unknown>;
+  return value;
 };
 
 export const requiredString = (value: unknown, field: string): string => {
@@ -82,7 +86,7 @@ export const transferRequest = (value: unknown, submission = false) => {
     "amountMinor",
     "currency",
     "note",
-    ...(submission ? ["approvalId", "idempotencyKey"] : []),
+    ...(submission ? ["approvalId", "idempotencyKey"] : ["authentication"]),
   ]);
 
   const recipient = object(body.recipient, ["name", "account"]);
@@ -186,4 +190,47 @@ export const configRequest = (value: unknown): Partial<TMockConfig> => {
   }
 
   return config;
+};
+
+export type TAuthentication =
+  { method: "biometric"; success: true } | { method: "pin"; pin: string };
+
+export const authenticationRequest = (value: unknown): TAuthentication => {
+  const body = object(value, ["method", "success", "pin"]);
+
+  if (
+    body.method === "biometric" &&
+    body.success === true &&
+    body.pin === undefined
+  ) {
+    return { method: "biometric", success: true };
+  }
+
+  if (
+    body.method === "pin" &&
+    typeof body.pin === "string" &&
+    /^\d{6}$/.test(body.pin) &&
+    body.success === undefined
+  ) {
+    return { method: "pin", pin: body.pin };
+  }
+
+  return invalid(
+    "A successful biometric result or six-digit banking PIN is required.",
+  );
+};
+
+export const authorizationRequest = (value: unknown) => {
+  const body = object(value, [
+    "recipient",
+    "amountMinor",
+    "currency",
+    "note",
+    "authentication",
+  ]);
+
+  return {
+    details: transferRequest(body).details,
+    authentication: authenticationRequest(body.authentication),
+  };
 };

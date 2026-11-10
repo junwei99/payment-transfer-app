@@ -1,12 +1,13 @@
-import { MockBank } from "./bank";
+import { MockBank } from "@mock/bank";
 import {
   ApiError,
+  authorizationRequest,
   configRequest,
   object,
   readJson,
   requiredString,
   transferRequest,
-} from "./validation";
+} from "@mock/validation";
 
 const bank = new MockBank();
 
@@ -61,9 +62,11 @@ const route = (request: Request, path: string): TRoute | undefined => {
       return {
         method: "POST",
         handle: async () => {
-          const { details } = transferRequest(await readJson(request));
+          const { details, authentication } = authorizationRequest(
+            await readJson(request),
+          );
 
-          return json(bank.authorize(details), 201);
+          return json(bank.authorize(details, authentication), 201);
         },
       };
     case "/transfers":
@@ -151,7 +154,13 @@ const server = Bun.serve({
     } catch (error) {
       if (error instanceof ApiError) {
         response = json(
-          { error: { code: error.code, message: error.message } },
+          {
+            error: {
+              code: error.code,
+              message: error.message,
+              ...(error.retryAt ? { retryAt: error.retryAt } : {}),
+            },
+          },
           error.status,
         );
       } else {

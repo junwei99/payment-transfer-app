@@ -6,7 +6,7 @@ Status: ready-for-human
 
 Replace the legacy client mock gateway with TanStack Query and the existing
 bankingService, preserving the current screens and transfer journey. Follow the
-[execution plan](plan.md). This scope was agreed through a planning interview;
+[execution plan](plan.md). This scope was agreed through a planning discussion;
 implementation is complete; manual device acceptance remains pending.
 
 ## Agreed scope
@@ -33,14 +33,14 @@ implementation is complete; manual device acceptance remains pending.
 
 No secure storage, restart recovery, persisted Query cache, transfer history,
 contacts integration, or visual redesign. Earlier proposals for persistent
-recovery were explicitly withdrawn to keep this assessment scope small.
+recovery were explicitly withdrawn to keep this project scope small.
 
 Closing the app loses unresolved-submission recovery information. A fresh balance
 does not prove that a particular transfer succeeded. Document this limitation in
-the assessment README during implementation.
+the project README during implementation.
 
 Real device biometrics and fallback handling remain required by
-[the assessment](../../docs/requirements.md), but are deferred from this task.
+[the product requirements](../../docs/requirements.md), but are deferred from this task.
 
 ## References
 

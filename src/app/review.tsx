@@ -3,6 +3,7 @@ import { Details } from "@/components/transfer/Details";
 import { Button } from "@/components/ui/Button";
 import { selectTransferLocked, useTransferStore } from "@/stores/transfer";
 import { Redirect, router } from "expo-router";
+import { randomUUID } from "expo-crypto";
 import { Text } from "react-native";
 
 const ReviewScreen = () => {
@@ -25,6 +26,18 @@ const ReviewScreen = () => {
     return <Redirect href="/" />;
   }
 
+  const authenticate = (method: "biometric" | "pin") => {
+    if (
+      useTransferStore.getState().dispatch({
+        type: "START_AUTHENTICATION",
+        attemptId: randomUUID(),
+        method,
+      })
+    ) {
+      router.navigate("/authenticate");
+    }
+  };
+
   return (
     <Page
       title="Review transfer"
@@ -33,8 +46,13 @@ const ReviewScreen = () => {
       <Details details={journey.details} />
 
       <Button
-        label="Continue"
-        onPress={() => router.navigate("/authenticate")}
+        label="Confirm transfer"
+        onPress={() => authenticate("biometric")}
+      />
+      <Button
+        label="Use banking PIN"
+        secondary
+        onPress={() => authenticate("pin")}
       />
       <Button
         label="Edit details"

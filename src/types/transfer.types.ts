@@ -8,8 +8,13 @@ export type TRecipientDraftSelection =
   | { kind: "SAVED"; recipientId: string }
   | { kind: "MANUAL" };
 
-export type TReviewedTransfer =
-  TGetApiEndpointRequest<"/transfer-authorizations">;
+export type TReviewedTransfer = Omit<
+  TGetApiEndpointRequest<"/transfer-authorizations">,
+  "authentication"
+>;
+
+export type TTransferAuthentication =
+  TGetApiEndpointRequest<"/transfer-authorizations">["authentication"];
 
 export type TSubmission = TGetApiEndpointRequest<"/transfers">;
 
@@ -36,7 +41,9 @@ export type TTransferFailure = Exclude<
  *
  * - IDLE: No reviewed transfer; the draft is editable.
  *
- * - REVIEWED: Ready for approval; edits require another review.
+ * - REVIEWED: Ready for authentication; edits require another review.
+ *
+ * - AUTHENTICATING: One active attempt; edits blocked, cancellation returns to review.
  *
  * - APPROVING: Approval is pending; edits and navigation are blocked.
  *
@@ -53,7 +60,18 @@ export type TTransferFailure = Exclude<
 export type TTransferJourney =
   | { status: "IDLE" }
   | { status: "REVIEWED"; details: TReviewedTransfer }
-  | { status: "APPROVING"; details: TReviewedTransfer }
+  | {
+      status: "AUTHENTICATING";
+      details: TReviewedTransfer;
+      attemptId: string;
+      method: "biometric" | "pin";
+    }
+  | {
+      status: "APPROVING";
+      details: TReviewedTransfer;
+      attemptId: string;
+      method: "biometric" | "pin";
+    }
   | { status: "SUBMITTING"; submission: TSubmission }
   | { status: "UNRESOLVED"; submission: TSubmission }
   | {

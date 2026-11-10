@@ -6,6 +6,7 @@
     "lib": ["ESNext"],
     "types": ["bun"],
     "strict": true,
+    "paths": { "@mock/*": ["./src/*"] },
     "noEmit": true,
     "skipLibCheck": true,
     "verbatimModuleSyntax": true

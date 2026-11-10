@@ -1,65 +1,32 @@
 import { Page } from "@/components/layout/Page";
-import { Button } from "@/components/ui/Button";
-import { ErrorMessage } from "@/components/ui/ErrorMessage";
-import { useSubmitTransfer } from "@/hooks/useSubmitTransfer";
-import { selectTransferLocked, useTransferStore } from "@/stores/transfer";
-import { getRejectionMessage } from "@/utils/transfer-error.utils";
-import { Redirect, router, usePreventRemove } from "expo-router";
-import { Text } from "react-native";
+import { AuthenticationChallenge } from "@/screens/authenticate/components/AuthenticationChallenge";
+import { TransferSubmissionStatus } from "@/screens/authenticate/components/TransferSubmissionStatus";
+import { useTransferStore } from "@/stores/transfer";
+import { Redirect, useNavigation, usePreventRemove } from "expo-router";
 
 const AuthenticateScreen = () => {
   const journey = useTransferStore((state) => state.journey);
-
-  const transfer = useSubmitTransfer();
-
-  const locked = useTransferStore(selectTransferLocked);
+  const navigation = useNavigation();
 
   const pending =
     journey.status === "APPROVING" || journey.status === "SUBMITTING";
 
   const unresolved = journey.status === "UNRESOLVED";
+  const authenticating = journey.status === "AUTHENTICATING";
 
-  const errorMessage = (() => {
-    if (journey.status === "UNRESOLVED") {
-      return "We couldn't confirm whether this transfer completed.";
+  usePreventRemove(pending || unresolved || authenticating, ({ data }) => {
+    const current = useTransferStore.getState();
+
+    if (current.journey.status === "AUTHENTICATING") {
+      current.dispatch({
+        type: "CANCEL_AUTHENTICATION",
+        attemptId: current.journey.attemptId,
+      });
+      navigation.dispatch(data.action);
+    } else if (current.journey.status === "REVIEWED") {
+      navigation.dispatch(data.action);
     }
-
-    return journey.status === "REJECTED"
-      ? getRejectionMessage(journey.error)
-      : null;
-  })();
-
-  const authenticateBtnText = (() => {
-    if (pending) {
-      return journey.status === "SUBMITTING"
-        ? "Sending transfer…"
-        : "Approving transfer…";
-    }
-
-    return unresolved ? "Retry transfer" : "Simulate authentication";
-  })();
-
-  const title = (() => {
-    if (pending) {
-      return journey.status === "SUBMITTING"
-        ? "Sending transfer"
-        : "Approving transfer";
-    }
-
-    return unresolved ? "Transfer status unknown" : "Simulated authentication";
-  })();
-
-  const description = (() => {
-    if (pending) {
-      return journey.status === "SUBMITTING"
-        ? "Sending transfer. Keep the app open."
-        : "Approving transfer. Keep the app open.";
-    }
-
-    return "Authentication is simulated. This does not use device security or collect credentials. Approval and payment are processed by the simulated backend.";
-  })();
-
-  usePreventRemove(locked, () => {});
+  });
 
   if (journey.status === "COMPLETED") {
     return (
@@ -73,47 +40,23 @@ const AuthenticateScreen = () => {
     return <Redirect href="/" />;
   }
 
-  return (
-    <Page title={title}>
-      <Text accessibilityLiveRegion="polite" className="text-base text-ink">
-        {description}
-      </Text>
+  if (journey.status === "REVIEWED") {
+    return <Redirect href="/review" />;
+  }
 
-      {errorMessage ? <ErrorMessage message={errorMessage} /> : null}
-
-      {unresolved && !pending ? (
-        <Text className="text-base text-ink">
-          Retry uses the same payment request. It can complete the payment if
-          the original request never arrived. Keep the app open; closing it
-          loses this recovery information.
-        </Text>
-      ) : null}
-
-      <Button
-        label={authenticateBtnText}
-        disabled={pending}
-        busy={pending}
-        onPress={() => {
-          void transfer();
-        }}
-      />
-
-      <Button
-        label="Back to review"
-        secondary
-        disabled={locked}
-        onPress={() => router.dismissTo("/review")}
-      />
-
-      {journey.status === "REJECTED" ? (
-        <Button
-          label="Edit details"
-          secondary
-          onPress={() => router.dismissTo("/")}
+  if (journey.status === "AUTHENTICATING" || journey.status === "APPROVING") {
+    return (
+      <Page title="Approve transfer">
+        <AuthenticationChallenge
+          key={journey.attemptId}
+          attemptId={journey.attemptId}
+          method={journey.method}
         />
-      ) : null}
-    </Page>
-  );
+      </Page>
+    );
+  }
+
+  return <TransferSubmissionStatus journey={journey} />;
 };
 
 export default AuthenticateScreen;

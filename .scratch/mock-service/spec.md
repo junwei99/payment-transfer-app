@@ -14,7 +14,7 @@ The service is implemented; developer manual verification is pending.
 
 - Build a simple mock service using Bun and TypeScript.
 - Implement the service first. Mobile client integration is a later effort.
-- Keep the service in this repository for local development and assessment demos.
+- Keep the service in this repository for local development and app demos.
 - Hosted deployment is outside this scope.
 - Implement functional simulation: validate transfers, reject insufficient
   funds, deduct the balance, and store successful transfers in memory.

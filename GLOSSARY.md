@@ -28,6 +28,10 @@ manual recipient.
 Permission to submit a specified transfer after the sender authenticates.
 It applies to that transfer rather than signing the sender into the app.
 
+**Demo banking PIN**:
+An demo-only banking credential used as an alternative to biometrics for
+transfer approval. It is separate from the device's screen-lock credential.
+
 **Reviewed transfer**:
 The recipient, amount, currency, and note the sender has checked before seeking
 transfer approval. Editing these details requires another review.

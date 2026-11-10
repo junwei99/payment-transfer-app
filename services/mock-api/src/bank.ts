@@ -1,6 +1,13 @@
-import type { TMockConfig, TTransferDetails } from "./validation";
-import { ApiError } from "./validation";
+import type {
+  TAuthentication,
+  TMockConfig,
+  TTransferDetails,
+} from "@mock/validation";
+import { ApiError } from "@mock/validation";
 
+const DEMO_PIN = "111111";
+const MAX_PIN_ATTEMPTS = 5;
+const PIN_COOLDOWN_MS = 30_000;
 type TApproval = { detailsKey: string; expiresAt: number; consumed: boolean };
 
 type TTransfer = TTransferDetails & {
@@ -33,6 +40,8 @@ export class MockBank {
   private submissions = new Map<string, TSubmission>();
   private config = defaultConfig();
   private failedOnce = false;
+  private pinFailures = 0;
+  private pinBlockedUntil = 0;
 
   account = () => {
     return {
@@ -63,6 +72,8 @@ export class MockBank {
   reset = () => {
     this.balanceMinor = 500_000;
     this.approvals.clear();
+    this.pinFailures = 0;
+    this.pinBlockedUntil = 0;
     this.transfers.clear();
     this.submissions.clear();
     this.config = defaultConfig();
@@ -71,7 +82,51 @@ export class MockBank {
     return { account: this.account(), config: { ...this.config } };
   };
 
-  authorize = (details: TTransferDetails) => {
+  private verifyPin = (pin: string) => {
+    const now = Date.now();
+
+    if (this.pinBlockedUntil && this.pinBlockedUntil <= now) {
+      this.pinFailures = 0;
+      this.pinBlockedUntil = 0;
+    }
+
+    if (this.pinBlockedUntil > now) {
+      throw new ApiError(
+        429,
+        "PIN_LOCKED",
+        "Too many incorrect attempts. Please wait before trying again.",
+        new Date(this.pinBlockedUntil).toISOString(),
+      );
+    }
+
+    if (pin !== DEMO_PIN) {
+      this.pinFailures += 1;
+
+      if (this.pinFailures >= MAX_PIN_ATTEMPTS) {
+        this.pinBlockedUntil = now + PIN_COOLDOWN_MS;
+        throw new ApiError(
+          429,
+          "PIN_LOCKED",
+          "Too many incorrect attempts. Please wait before trying again.",
+          new Date(this.pinBlockedUntil).toISOString(),
+        );
+      }
+
+      throw new ApiError(
+        403,
+        "PIN_INCORRECT",
+        "Incorrect banking PIN. Please try again.",
+      );
+    }
+
+    this.pinFailures = 0;
+  };
+
+  authorize = (details: TTransferDetails, authentication: TAuthentication) => {
+    if (authentication.method === "pin") {
+      this.verifyPin(authentication.pin);
+    }
+
     switch (this.config.approvalOutcome) {
       case "cancelled":
         throw new ApiError(

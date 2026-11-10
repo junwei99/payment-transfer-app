@@ -51,7 +51,7 @@ Create a mobile prototype with an editable transfer form, review, simulated auth
 - Provide prototype-only scenario selection before the flow: success, input error, insufficient funds, network failure, authentication cancellation, and unavailable biometrics. Place each scripted result at its relevant journey step.
 - Retry is governed by the chosen scripted scenario, not random behavior. Reset restores a documented initial fixture state and clears entered values, transient errors, and pending demo work. Determine exact retry sequencing in the affected ticket's initial grilling round.
 - Begin every implementation ticket with a focused grilling round on unresolved UI details. Resolve those decisions with the user before coding. This is an interactive execution prerequisite despite the tracker's ready-for-agent status.
-- Production data integration remains separate work. This prototype does not implement the full assessment's service, security, or financial requirements.
+- Production data integration remains separate work. This prototype does not implement the full app's service, security, or financial requirements.
 
 ## Testing Decisions
 

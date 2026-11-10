@@ -14,4 +14,4 @@ Apply to TypeScript and React Native code, including tests and mocks.
 
 - Spacing: keep imports contiguous, then one blank line. Separate logical groups with one blank line, including inside hooks and callbacks: guards, declarations, helpers, subscriptions, async work, cleanup, and returns. Keep statements for one small task together.
 
-- Conditionals: always use braces for `if`, `else if`, and `else`, including single statements.
+- Conditionals: always use braces for `if`, `else if`, and `else`, including single statements. Limit ternary expressions (`? :`) to one level; use `if`/`else` when another ternary would appear in the condition or either branch.

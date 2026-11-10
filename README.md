@@ -70,13 +70,112 @@ the identical request.
 
 ## Technical design decisions
 
-#### React Hook Form owns form values, the store owns journey state
+#### A payment executes at most once, however it is retried
 
-- One source of validation in Zod, and a draft that survives navigation.
+- Two identities protect one payment: an approval, bound to the reviewed details
+  and consumed on success, and an idempotency key that identifies the submission.
+  Resending the same key and body returns the original receipt, never a second
+  debit.
+- Nothing retries on its own. A timeout, dropped connection, 5xx, or unreadable body
+  is an unknown outcome, so the app keeps the exact request and offers one action:
+  send that same request again.
+- Changing the payment means a new approval and a new key, so one key can never
+  cover two different payments.
 
-#### Transitions go through a typed dispatch over a pure function
+| Request arriving at the service | Result                                |
+| ------------------------------- | ------------------------------------- |
+| Known key, identical body       | The original receipt, `200`, no debit |
+| Known key, different body       | `409`, no debit                       |
+| Unknown key, valid approval     | One debit, `201`                      |
 
-- An illegal transition cannot be written, and a rejected action cannot leak an API call.
+#### Every journey change goes through one typed dispatch
+
+- `dispatch` is the only writer. It passes the current journey and an action to
+  `transitionJourney`, a pure switch with one case per action, then stores the
+  result. A missing `case` fails `tsc`.
+- The switch returns the next journey, or `null` when the action is not allowed from
+  that state. `dispatch` returns `true` or `false`, and callers check it before the
+  side effect, so a refused action cannot still send a request.
+- Actions describe intent and carry its payload. The store derives the rest: retry
+  reuses the stored submission, and a rejection rebuilds an editable draft without
+  the approval ID or idempotency key.
+
+```ts
+// src/stores/transfer.ts
+const transitionJourney = (
+  journey: TTransferJourney,
+  action: TTransferAction,
+): TTransferJourney | null => {
+  switch (action.type) {
+    case "REVIEW":
+      if (selectTransferLocked({ journey })) {
+        return null; // payment in flight, so the edit is refused
+      }
+
+      return { status: "REVIEWED", details: action.details };
+    // ...one case per action
+  }
+};
+
+// inside the Zustand store: one writer, one boolean
+dispatch: (action) => {
+  const next = transitionJourney(get().journey, action);
+
+  if (next === null) {
+    return false; // blocked, state untouched
+  }
+
+  set({ journey: next });
+
+  return true;
+},
+```
+
+```ts
+// src/hooks/useSubmitTransfer.ts
+if (!dispatch({ type: "START_APPROVAL", attemptId })) {
+  return; // refused, so no approval request goes out
+}
+```
+
+#### API Endpoint Registry
+
+- One entry per endpoint holds the request, success, and error schemas, and the
+  requestor only accepts registered paths. A contract change has one place to land.
+- Types are inferred from those schemas, and the same schemas parse the response at
+  runtime, so a payload that drifts fails as a parse error rather than entering the
+  app with a type it does not have.
+- The requestor parses non-2xx bodies and throws a typed `ServiceError` itself, so
+  every caller sees a classified failure instead of a raw Axios response.
+- Each endpoint's error schema types its business failures, so callers read `code`,
+  `message`, and `retryAt` without re-validating or asserting.
+
+```ts
+// src/schemas/apis/submit-transfer.schema.ts
+export const SUBMIT_TRANSFER_API_SCHEMA = {
+  request: SUBMIT_TRANSFER_REQ_SCHEMA, // what the client may send
+  successResponse: SUBMIT_TRANSFER_RES_SCHEMA, // 2xx body, returned typed
+  errResponse: SUBMIT_TRANSFER_ERR_RESPONSE_SCHEMA, // non-2xx body, typed
+};
+
+// src/schemas/api.schema.ts
+export const API_SCHEMA = {
+  "/transfers": SUBMIT_TRANSFER_API_SCHEMA,
+  "/transfers/lookup": GET_TRANSFER_API_SCHEMA,
+} as const; // each entry declares request, success, and error schemas
+
+// src/services/index.services.ts
+const submitTransfer = requestor.createRequest("/transfers");
+// body: z.input<request>; result: z.output<successResponse>; throws ServiceError
+```
+
+```ts
+// src/hooks/useSubmitTransfer.ts
+if (error instanceof ServiceError && error.failure.kind === "api-error") {
+  // typed by /transfers' error schema, not a generic Error
+  error.failure.error.error.code; // e.g. "INSUFFICIENT_FUNDS"
+}
+```
 
 ## Business requirements decisions
 

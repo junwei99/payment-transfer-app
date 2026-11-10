@@ -1,13 +1,4 @@
-# Payment transfer with biometrics
-
-An Expo app for iOS and Android that sends money to a recipient and approves the
-transfer with the device's biometrics, falling back to a banking PIN that the
-backend verifies. A standalone Bun service owns the balance, approvals, and
-completed transfers.
-
-Most of the work went into one failure case: a payment whose response never
-arrives can still have gone through, so the app must not report it as failed and
-must not send it twice.
+# Payment transfer app
 
 **Stack:** Expo SDK 58, React Native 0.88, React 19, TypeScript 6, Expo Router,
 TanStack Query, Zustand, React Hook Form, Zod, Uniwind.
@@ -22,23 +13,6 @@ TanStack Query, Zustand, React Hook Form, Zod, Uniwind.
 Recording pending. The walkthrough covers invalid input, manual recipient entry,
 review, the biometric prompt, the receipt, and a failed submission retried with
 the identical request.
-
-## Features
-
-- **Recipients:** pick a saved recipient with search by name or account number,
-  or enter a name and account number manually
-- **Amount:** enter an amount in MYR with an optional note
-- **Balance:** see the available balance, refreshed when the app returns to the
-  foreground or reconnects
-- **Approval:** approve with Face ID, Touch ID, or fingerprint
-- **PIN fallback:** fall back to a six-digit banking PIN, with the attempt limit
-  and 30-second cooldown enforced by the service across devices
-- **Bound approval:** approval binds to the reviewed recipient, amount,
-  currency, and note, and expires after five minutes
-- **Recovery:** recover an unconfirmed transfer by resending the identical
-  request, then open the receipt by transfer ID
-- **Fit and finish:** the recipient list is virtualized and searchable, and
-  screen motion follows the system reduce-motion setting
 
 ## Technology choices
 

@@ -15,7 +15,7 @@ const TransferScreen = () => {
   const isOnline = useOnline();
 
   const [refreshing, setRefreshing] = useState(false);
-  // TOOD ASK AI: why is refreshInProgress required here?
+  // Guards re-entry: state updates lag, so a second pull can land before a re-render.
   const refreshInProgress = useRef(false);
 
   const locked = useTransferStore(selectTransferLocked);

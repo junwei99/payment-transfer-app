@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "payment-transfer-app",
+    "name": "Payment Transfer App",
     "slug": "payment-transfer-app",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -8,12 +8,11 @@
     "scheme": "payment-transfer-app",
     "userInterfaceStyle": "light",
     "ios": {
-      "icon": "./assets/expo.icon",
       "bundleIdentifier": "com.junwei99.payment-transfer-app"
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#f2efe7",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -39,7 +38,7 @@
       [
         "expo-local-authentication",
         {
-          "faceIDPermission": "Allow $(PRODUCT_NAME) to use Face ID to approve your transfer."
+          "faceIDPermission": "Allow Payment Transfer App to use Face ID to approve your transfer."
         }
       ]
     ],

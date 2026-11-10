@@ -16,15 +16,6 @@ export const TransferReceipt = ({ id }: { id: string }) => {
 
   return (
     <>
-      <View className="flex-row items-center gap-3 rounded-lg bg-sage p-4">
-        <Text
-          accessibilityLiveRegion="polite"
-          className="flex-1 text-base leading-6 text-ink"
-        >
-          Transfer completed on the simulated backend. No real money moved.
-        </Text>
-      </View>
-
       <Details details={completed} />
 
       <View className="gap-2 border-t border-divider pt-5">

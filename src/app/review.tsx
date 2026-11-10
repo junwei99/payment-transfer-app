@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/Button";
 import { selectTransferLocked, useTransferStore } from "@/stores/transfer";
 import { Redirect, router } from "expo-router";
 import { randomUUID } from "expo-crypto";
-import { Text } from "react-native";
 
 const ReviewScreen = () => {
   const journey = useTransferStore((state) => state.journey);
@@ -59,10 +58,6 @@ const ReviewScreen = () => {
         secondary
         onPress={() => router.dismissTo("/")}
       />
-
-      <Text className="text-sm text-secondary">
-        This uses a simulated backend. No real money will move.
-      </Text>
     </Page>
   );
 };

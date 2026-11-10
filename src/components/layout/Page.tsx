@@ -48,9 +48,6 @@ export const Page = ({
                   <Text className="text-sm text-secondary">
                     Payment transfer
                   </Text>
-                  <Text className="text-sm text-secondary">
-                    Simulated backend
-                  </Text>
                 </View>
                 <View
                   pointerEvents="none"

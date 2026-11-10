@@ -242,7 +242,7 @@ export class MockBank {
     const transfer: TTransfer = {
       ...details,
       id,
-      reference: `DEMO-${id}`,
+      reference: `TRX-${id.replaceAll("-", "").slice(0, 12).toUpperCase()}`,
       status: "completed",
       createdAt: new Date().toISOString(),
     };

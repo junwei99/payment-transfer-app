@@ -1,177 +1,204 @@
-# payment-transfer-app
+# Payment transfer with biometrics
 
-An Expo SDK 58 app for iOS and Android backed by the standalone
-[Bun mock API](services/mock-api/README.md). Account, recipients, and completed
-transfers use TanStack Query. Approval and submission use mutations through the
-existing Axios/Zod boundary. The backend owns the balance and transfer records.
+An Expo app for iOS and Android that sends money to a recipient and approves the
+transfer with the device's biometrics, falling back to a banking PIN that the
+backend verifies. A standalone Bun service owns the balance, approvals, and
+completed transfers.
 
-## Run locally
+Most of the work went into one failure case: a payment whose response never
+arrives can still have gone through, so the app must not report it as failed and
+must not send it twice.
 
-1. Run `pnpm install` in the repository root.
-2. Copy `.env.example` to `.env.local` and set `EXPO_PUBLIC_API_URL`.
-   Use `http://localhost:3001` for the iOS simulator,
-   `http://10.0.2.2:3001` for the standard Android emulator, or
-   `http://<your-Mac-LAN-IP>:3001` for a physical device on the same network.
-   There is no fallback URL; invalid or missing configuration throws a setup error.
-3. In `services/mock-api`, run `bun install --frozen-lockfile`, then `bun run dev`.
-   The service binds to `0.0.0.0` by default. Metro tunnels do not forward this API.
-4. Build and install a native app using `pnpm exec expo run:ios --device` or
-   `pnpm exec expo run:android --device`. Local iOS builds require macOS, Xcode,
-   and signing for a physical device; Android builds require the Android SDK and
-   a connected device with USB debugging enabled. Expo generates native projects
-   from app configuration. Rebuild after changing native dependencies or permissions.
-5. For later JavaScript-only changes, run `pnpm exec expo start` and reconnect
-   the installed app to Metro.
+**Stack:** Expo SDK 58, React Native 0.88, React 19, TypeScript 6, Expo Router,
+TanStack Query, Zustand, React Hook Form, Zod, Uniwind.
 
-Expo inlines public environment variables; reload after changing the URL. Never
-put secrets in `EXPO_PUBLIC_` variables. The added `expo-network` and `expo-crypto`
-modules use SDK-compatible versions and are included in Expo Go. Existing
-custom development builds need rebuilding to include newly added native modules.
-See the SDK 58 [Network](https://docs.expo.dev/versions/v58.0.0/sdk/network/)
-and [Crypto](https://docs.expo.dev/versions/v58.0.0/sdk/crypto/) documentation.
+## Demo
 
-## Transfer behavior and limitations
+<!-- Record 60 to 90 seconds against a development build, then replace this section
+     with: [![Watch the demo](docs/demo-poster.png)](docs/demo.mp4)
+     Suggested capture: invalid input, manual recipient, review, Face ID prompt,
+     receipt, and a fail-once retry that debits only once. -->
 
-Enter recipient details (a ten-digit account number), a positive amount with at
-most two decimal places, and an optional note of at most 200 characters. Leading
-zeros in account numbers are preserved. Amounts are converted exactly into safe
-integer minor units. The backend makes the final available-balance decision.
+Recording pending. The walkthrough covers invalid input, manual recipient entry,
+review, the biometric prompt, the receipt, and a failed submission retried with
+the identical request.
 
-Confirm transfer starts real device biometrics. Android requires strong (Class 3)
-biometrics. Choose **Use banking PIN** on review to skip the prompt, or select it
-from authentication recovery. On iOS, the native fallback action also opens PIN
-entry. Cancel returns to review without sending. Devices without usable biometrics
-or a screen lock can use the banking PIN directly.
+## Features
 
-The demo PIN is **111111**. The mock backend verifies this fixed demo
-credential; it is not the phone's passcode or production security. Enter six digits
-and tap **Confirm transfer**. `POST /transfer-authorizations` receives the reviewed
-details and `authentication`: either `{ "method": "pin", "pin": "111111" }` or,
-after successful native authentication, `{ "method": "biometric", "success": true }`.
-The backend verifies the PIN and issues approval in the same request. The PIN never
-enters transfer state, Query mutation variables, logs, or transfer submission payloads.
-The biometric result is a client-declared mock result, not cryptographic proof.
+- **Recipients:** pick a saved recipient with search by name or account number,
+  or enter a name and account number manually
+- **Amount:** enter an amount in MYR with an optional note
+- **Balance:** see the available balance, refreshed when the app returns to the
+  foreground or reconnects
+- **Approval:** approve with Face ID, Touch ID, or fingerprint
+- **PIN fallback:** fall back to a six-digit banking PIN, with the attempt limit
+  and 30-second cooldown enforced by the service across devices
+- **Bound approval:** approval binds to the reviewed recipient, amount,
+  currency, and note, and expires after five minutes
+- **Recovery:** recover an unconfirmed transfer by resending the identical
+  request, then open the receipt by transfer ID
+- **Fit and finish:** the recipient list is virtualized and searchable, and
+  screen motion follows the system reduce-motion setting
 
-Five wrong entries trigger a server-enforced 30-second PIN-only cooldown shared
-by the demo account across devices. Counts survive navigation and app restarts;
-successful PIN verification or cooldown expiry clears failures. Backend reset or
-restart clears all demo state. Biometrics retain OS-managed limits and remain
-available during PIN cooldown. There is no enrollment or recovery.
+## Technology choices
 
-Leaving the app during authentication abandons the attempt and preserves transfer
-details; returning requires fresh authentication. The native prompt's inactive
-state alone does not cancel authentication. Once submission starts, existing
-uncertain-submission recovery applies. No real money moves, and the mock backend
-does not verify biometric proof.
+#### Uniwind with Tailwind CSS 4
 
-Face ID requires a native development build; Expo Go cannot verify this flow.
-The LocalAuthentication config plugin supplies the Face ID permission description.
-See [Expo SDK 58 LocalAuthentication](https://docs.expo.dev/versions/v58.0.0/sdk/local-authentication/).
+- makes styling with Tailwind possible on React Native.
 
-Payment mutations never automatically retry or queue for reconnect. An uncertain
-submission locks editing and new transfers and offers **Retry transfer**, using
-the identical request, approval ID, and idempotency key. Retry can complete a
-payment that never reached the backend. A completed request replays its original
-receipt without a second deduction, even after approval expiry. Unknown errors,
-malformed responses, and transport failures are treated conservatively.
+#### Zod
 
-Recovery exists only in memory while the app remains open. Closing or reloading
-the app loses unresolved-submission recovery information. There is no secure
-storage, persisted Query cache, restart recovery, or transfer history. A fresh
-balance cannot establish that a particular transfer succeeded. Restarting or
-resetting the mock backend also discards its receipts and idempotency records;
-do not do this during an unresolved payment.
+- Validates form input and API responses.
 
-On success, the app caches the validated receipt by ID and refreshes the balance
-without delaying confirmation. A balance-refresh error never turns a completed
-payment into a failed payment. Confirmation also supports lookup with
-`/confirmation?id=<transfer-id>`. Done clears only the local form.
+- Types inferred from schemas keep runtime validation and static types in sync.
 
-Stale active reads refresh on foreground and reconnect. Account data is stale
-immediately; recipients stay fresh for five minutes. Transient reads retry once.
-Previously loaded data remains visible after a failed refresh. These integrations
-follow the official [TanStack Query React Native guide](https://tanstack.com/query/latest/docs/framework/react/react-native).
+- Requestor + Zod schema system so that all API responses are required to be provided a Zod schema to ensure runtime accurate API response types.
 
-## API boundary
+#### React Hook Form
 
-All calls use POST JSON bodies. Banking services live in
-`src/services/index.services.ts`; endpoint schemas are in `src/schemas/apis/` and
-the registry and inferred types in `src/schemas/api.schema.ts`.
-`src/utils/requestor.utils.ts` sends bodies unchanged, parses responses with Zod,
-and returns validated success data directly. Expected API, parse, and transport
-failures throw the shared `ServiceError` from `src/utils/service-error.utils.ts`.
-Its `failure` retains the category, HTTP status where available, parsed API details
-(including PIN cooldown), validation issues, or transport reason. Unexpected
-programming and configuration errors propagate unchanged. Callers do not unwrap
-results; Query receives rejected promises for failures.
+- Form library that works with Zod to validate form against with schema.
 
-The requestor timeout is 30 seconds and it never retries. Health and developer
-control endpoints are for external development tools only; the mobile client
-does not call them. Use the service README's curl commands to configure scenarios.
+#### TanStack Query
 
-## Manual verification
+- Manages server side data.
 
-No automated tests or test framework were added. Run these checks on both mobile
-targets, using external mock controls or a local response-intercepting proxy:
+- Caching and query invalidation keep the UI up to data after API writes.
 
-- Load account and recipients; exercise loading, offline, empty recipients,
-  individual read failures, manual entry when recipients fail, and Retry.
-  Empty lists and malformed responses require interception; backend controls do
-  not expose every response variation.
-- Validate blank names, ten-digit accounts including leading zeros, invalid and
-  excessive amounts, decimal precision, and notes over 200 characters. Review
-  edits must appear in the eventual payment. Exceeding balance warns locally and
-  yields the backend's insufficient-funds error.
-- Configure each approval failure and confirm no submission occurs. Expire an
-  approval (hold submission for over five minutes) and repeat
-  authentication to obtain a fresh approval.
-- Complete a transfer, compare receipt and lookup by ID, and verify the balance.
-  Fail only the post-payment account read; the receipt must remain successful.
-- Tap repeatedly and try Back/gestures while pending or uncertain. Editing and
-  new transfers must remain blocked. Use `fail-once` for explicit same-key retry.
-- Delay/drop the submission response after commit, then retry with normal
-  responses. Inspect requests to confirm identical bodies and keys; expect one
-  transfer and one debit. Intercept a malformed submission response and verify
-  it also offers recovery instead of reporting a definitive failure.
-- Background/foreground and disconnect/reconnect. Reads refresh when stale;
-  payments must never submit automatically on reconnect.
-- Open confirmation with an unseeded, unknown, or missing ID. Check lookup,
-  errors, and Retry. Close/reopen the app to confirm that recovery is not persisted.
+#### Zustand
 
-### Authentication acceptance checklist
+- Manages client side data.
 
-Physical-device verification is assigned to the user and remains pending. Record
-OS/device, biometric method, build, and result for each applicable case on both
-Android and iOS:
+- A more performative alternative to React Context as Context re-renders every component that reads it, on any change.
 
-- Real biometric success sends exactly once; native Cancel returns to review with
-  details intact and no approval/submission calls.
-- Explicit banking PIN choice before biometric failure; valid `111111`; short,
-  nondigit, and incorrect input; masked entry and cleared input on failure/exit.
-- Fifth wrong PIN triggers 30 seconds of waiting. Back/re-entry preserves attempts
-  and remaining time. Expiry and successful PIN verification reset counts.
-  Biometrics work during PIN cooldown; app restart does not reset server protection.
-- No hardware/enrollment, biometric lockout, Android weaker-only biometrics, and
-  denied iOS Face ID permission offer usable PIN recovery. No device credential
-  prompt should appear. No device screen lock is required for demo PIN use.
-- Biometric failure/timeout/interruption offers explicit recovery. Genuine
-  backgrounding abandons PIN or biometric authentication; the native prompt itself
-  does not. Late success after abandonment must never call approval.
-- Rapid confirmation/retry taps, native Back, gestures, editing reviewed details,
-  fresh authentication after approval failure, and expired approval.
-- Uncertain submission retry retains the original body/key, without fresh
-  authentication, and yields only one debit. Do not reset the mock backend here.
-- Keyboard, small screen, larger text, and screen reader access to PIN controls,
-  errors, and cooldown. Verify PIN data appears only in the verification request and never in logs or transfer submissions.
+- Zustand keeps re-renders local. Each screen subscribes to the part it shows
 
-Required static checks:
+## Design decisions
+
+| Decision                                                               | Why                                                                                    | Cost                                                       |
+| ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| Every endpoint is POST with a JSON body, reads included                | One requestor contract, with no path, query, or header variants to keep in sync        | Reads look unconventional to a REST reviewer               |
+| React Hook Form owns form values, the store owns journey state         | One source of validation in Zod, and a draft that survives navigation                  | Form state is not readable outside the form                |
+| Transitions go through a typed dispatch over a pure function           | An illegal transition cannot be written, and a rejected action cannot leak an API call | Each action needs an allowed source state                  |
+| No automatic retry and no offline queue for payments                   | A retried payment can debit twice                                                      | The user has to act                                        |
+| A submission's outcome is classified from the validated error contract | A timeout or a 5xx is unknown, which is different from a rejection                     | Depends on the service keeping a documented error taxonomy |
+
+## Challenges
+
+Approval and submission are separate requests, so a lost submission response
+leaves the app unable to tell whether money moved. Every submission resolves to
+one of three outcomes:
+
+| Outcome    | How it is decided                                             | What the app keeps                                                                                                            |
+| ---------- | ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Completed  | The response validates as a receipt                           | The receipt, cached by transfer ID. The balance refreshes separately, so a later read failure cannot mark it failed           |
+| Rejected   | A validated error from the service's taxonomy                 | The draft, with no debit                                                                                                      |
+| Unresolved | A timeout, a dropped connection, a 5xx, or an unparsable body | The exact body, approval ID, and idempotency key. Editing and new transfers stay blocked, and retry replays that same request |
+
+The service returns the original receipt for an identical replay, even after the
+approval expired.
+
+Two details here were easy to get wrong:
+
+- The mutation runs with `retry: false` and `networkMode: "always"`. TanStack
+  Query would otherwise pause a mutation while offline and fire it on reconnect,
+  which is the app submitting money on the user's behalf.
+- A changed balance is never treated as proof that a specific transfer completed.
+
+Face ID only runs in a development build, so the native prompt is configured
+through the `expo-local-authentication` config plugin rather than Expo Go. On
+Android the check requires Class 3 biometrics, and `disableDeviceFallback` keeps
+the system passcode prompt out of the flow, since a transfer approved with the
+phone's unlock code is not what the brief asks for. The PIN is its own screen,
+reached from review or from authentication recovery. Attempt counts live on the
+service so five wrong entries trigger a cooldown shared across devices, which a
+client-side counter could not enforce.
+
+Separating editable values from journey state was the other constraint. React Hook
+Form stays the only owner of editable values, and the store accepts transitions,
+so editing reviewed details invalidates the approval in one place. The form
+provider sits above the navigation stack, which is why Back and forward keep the
+draft without persisting anything.
+
+## Run it
+
+Install the dependencies and copy the environment file:
 
 ```sh
-pnpm dlx prettier --write --ignore-unknown <modified-or-created-files>
-pnpm exec expo lint
-pnpm exec tsc --noEmit
+pnpm install
+cp .env.example .env.local        # set EXPO_PUBLIC_API_URL
 ```
 
-Verification on 2026-11-08: formatting, Expo lint, TypeScript, and production
-bundle exports for iOS and Android passed. Device journeys and live API scenarios
-were not exercised; the scenarios above remain a manual acceptance checklist.
+Start the service:
+
+```sh
+cd services/mock-api
+bun install --frozen-lockfile
+bun run dev
+```
+
+Then, from the repository root in a second terminal, build and run the app:
+
+```sh
+pnpm exec expo run:ios --device     # or: pnpm exec expo run:android --device
+```
+
+| Target           | `EXPO_PUBLIC_API_URL`      |
+| ---------------- | -------------------------- |
+| iOS simulator    | `http://localhost:3001`    |
+| Android emulator | `http://10.0.2.2:3001`     |
+| Physical device  | `http://<Mac-LAN-IP>:3001` |
+
+The app throws a setup error when the variable is missing or invalid; there is no
+fallback. The service binds to `0.0.0.0`, and Metro tunnels do not forward it.
+Face ID needs a development build, so Expo Go will not run that path.
+
+## Project map
+
+```text
+src/
+  app/          Expo Router routes, one file per screen
+  screens/      screen composition and per-screen components
+  components/   shared layout, transfer, and ui pieces
+  hooks/        side effects: challenge, approval, submission, PIN cooldown
+  stores/       journey state and PIN attempt state
+  query/        Query client and server data
+  services/     endpoint declarations behind the requestor
+  schemas/      Zod schemas for forms and API contracts
+  types/        shared types
+  utils/        requestor, error mapping, and formatting helpers
+services/
+  mock-api/     Bun service: balance, approvals, idempotent transfers
+docs/           architecture, design guides, and decisions
+```
+
+## Documentation
+
+| Document                                           | Covers                                                        |
+| -------------------------------------------------- | ------------------------------------------------------------- |
+| [Architecture](docs/architecture.md)               | Request path, journey state machine, and error contract       |
+| [User story spec](docs/user-story-spec.md)         | Product behaviour and acceptance criteria                     |
+| [Manual verification](docs/manual-verification.md) | Scenario checklist for transfer, recovery, and authentication |
+| [Technology choices](docs/tech-choices.md)         | Framework, library, and tooling rationale                     |
+| [Design guides](docs/design/styling-guide.md)      | Styling, loading states, form validation, and dispatch        |
+| [ADRs](docs/adr)                                   | Post-only API and the category-folder layout                  |
+| [Assessment brief](docs/requirements.md)           | The original take-home brief                                  |
+
+## Assumptions
+
+- macOS with Xcode for iOS, the Android SDK and USB debugging for Android, and
+  Bun 1.2.11 or later for the service
+- One MYR account and no sign-in. Changing `.env.local` needs a reload because
+  Expo inlines the value at build time
+- The demo PIN is `111111`. It is a fixed credential the service verifies, not
+  the device passcode
+- No real money moves; the service simulates payments
+
+## Known limits
+
+- Recovery lasts only while the app is open. There is no persisted draft, cache,
+  or restart recovery
+- No transfer history. Receipts are looked up by transfer ID
+- The service does not verify biometric proof; the app declares the result
+- Contact import and recent-transfer history were the optional stretch goals and
+  are not implemented
+- No automated tests. Formatting, lint, and type checks pass

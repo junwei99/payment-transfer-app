@@ -15,6 +15,8 @@ Follow [docs/design/styling-guide.md](docs/design/styling-guide.md) for screen s
 Follow [docs/design/loading-states.md](docs/design/loading-states.md) for transfer loading and recipient selection behavior.
 Follow [docs/design/form-validation.md](docs/design/form-validation.md) when changing form schemas, validation, or transfer input behavior.
 
+Follow [docs/architecture.md](docs/architecture.md) for the module layout, request path, journey state machine, and failure classification.
+
 When writing or modifying TypeScript or React Native code, follow the coding conventions in [docs/code-of-conduct.md](docs/code-of-conduct.md).
 
 Place new project documentation under `docs/`, using kebab-case filenames and existing topic folders where applicable. Add a pointer in `AGENTS.md` for docs agents must follow. Create documentation at the project root only when explicitly requested or required by a tool or framework.

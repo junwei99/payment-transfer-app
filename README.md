@@ -51,36 +51,44 @@ the identical request.
 - Validates form input and API responses.
 
 - Types inferred from schemas keep runtime validation and static types in sync.
-
 - Requestor + Zod schema system so that all API responses are required to be provided a Zod schema to ensure runtime accurate API response types.
 
 #### React Hook Form
 
-- Form library that works with Zod to validate form against with schema.
+- Form library that works with Zod to validate form against schema.
 
 #### TanStack Query
 
 - Manages server side data.
-
 - Caching and query invalidation keep the UI up to data after API writes.
 
 #### Zustand
 
 - Manages client side data.
-
 - A more performative alternative to React Context as Context re-renders every component that reads it, on any change.
-
 - Zustand keeps re-renders local. Each screen subscribes to the part it shows
 
-## Design decisions
+## Technical design decisions
 
-| Decision                                                               | Why                                                                                    | Cost                                                       |
-| ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| Every endpoint is POST with a JSON body, reads included                | One requestor contract, with no path, query, or header variants to keep in sync        | Reads look unconventional to a REST reviewer               |
-| React Hook Form owns form values, the store owns journey state         | One source of validation in Zod, and a draft that survives navigation                  | Form state is not readable outside the form                |
-| Transitions go through a typed dispatch over a pure function           | An illegal transition cannot be written, and a rejected action cannot leak an API call | Each action needs an allowed source state                  |
-| No automatic retry and no offline queue for payments                   | A retried payment can debit twice                                                      | The user has to act                                        |
-| A submission's outcome is classified from the validated error contract | A timeout or a 5xx is unknown, which is different from a rejection                     | Depends on the service keeping a documented error taxonomy |
+#### React Hook Form owns form values, the store owns journey state
+
+- One source of validation in Zod, and a draft that survives navigation.
+
+#### Transitions go through a typed dispatch over a pure function
+
+- An illegal transition cannot be written, and a rejected action cannot leak an API call.
+
+## Business requirements decisions
+
+#### No automatic retry and no offline queue for payments
+
+- A retried payment can debit twice.
+- Cost: the user has to act.
+
+#### A submission's outcome is classified from the validated error contract
+
+- A timeout or a 5xx is unknown, which is different from a rejection.
+- Cost: depends on the service keeping a documented error taxonomy.
 
 ## Challenges
 
@@ -170,18 +178,6 @@ services/
   mock-api/     Bun service: balance, approvals, idempotent transfers
 docs/           architecture, design guides, and decisions
 ```
-
-## Documentation
-
-| Document                                           | Covers                                                        |
-| -------------------------------------------------- | ------------------------------------------------------------- |
-| [Architecture](docs/architecture.md)               | Request path, journey state machine, and error contract       |
-| [User story spec](docs/user-story-spec.md)         | Product behaviour and acceptance criteria                     |
-| [Manual verification](docs/manual-verification.md) | Scenario checklist for transfer, recovery, and authentication |
-| [Technology choices](docs/tech-choices.md)         | Framework, library, and tooling rationale                     |
-| [Design guides](docs/design/styling-guide.md)      | Styling, loading states, form validation, and dispatch        |
-| [ADRs](docs/adr)                                   | Post-only API and the category-folder layout                  |
-| [Assessment brief](docs/requirements.md)           | The original take-home brief                                  |
 
 ## Assumptions
 

@@ -211,13 +211,9 @@ pnpm exec expo run:ios --device     # or: pnpm exec expo run:android --device
 ```
 
 The tunnel works from the simulator, the emulator, and a physical device, so the
-same URL fits every target. It changes each time `cloudflared` starts: update
-`.env.local` and restart Expo, because the value is inlined at build time. Anyone
-with the URL can reach the mock service, so stop the tunnel when the demo ends.
+same URL fits every target.
 
-The app throws a setup error when the variable is missing or invalid; there is no
-fallback. Metro's tunnel does not forward the service. **Face ID needs a
-development build, so Expo Go will not run that path.**
+It changes each time `cloudflared` starts: update `.env.local` and restart Expo.
 
 ## Project map
 

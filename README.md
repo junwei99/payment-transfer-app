@@ -169,40 +169,9 @@ export const API_SCHEMA = {
 
 ## Challenges
 
-Approval and submission are separate requests, so a lost submission response
-leaves the app unable to tell whether money moved. Every submission resolves to
-one of three outcomes:
+Main challenge faced during this assessment is mainly due to unfamiliarity to the tech stack. It took some time for me to learn Zustand, React Hook Form and Tanstack Query.
 
-| Outcome    | How it is decided                                             | What the app keeps                                                                                                            |
-| ---------- | ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| Completed  | The response validates as a receipt                           | The receipt, cached by transfer ID. The balance refreshes separately, so a later read failure cannot mark it failed           |
-| Rejected   | A validated error from the service's taxonomy                 | The draft, with no debit                                                                                                      |
-| Unresolved | A timeout, a dropped connection, a 5xx, or an unparsable body | The exact body, approval ID, and idempotency key. Editing and new transfers stay blocked, and retry replays that same request |
-
-The service returns the original receipt for an identical replay, even after the
-approval expired.
-
-Two details here were easy to get wrong:
-
-- The mutation runs with `retry: false` and `networkMode: "always"`. TanStack
-  Query would otherwise pause a mutation while offline and fire it on reconnect,
-  which is the app submitting money on the user's behalf.
-- A changed balance is never treated as proof that a specific transfer completed.
-
-Face ID only runs in a development build, so the native prompt is configured
-through the `expo-local-authentication` config plugin rather than Expo Go. On
-Android the check requires Class 3 biometrics, and `disableDeviceFallback` keeps
-the system passcode prompt out of the flow, since a transfer approved with the
-phone's unlock code is not what the brief asks for. The PIN is its own screen,
-reached from review or from authentication recovery. Attempt counts live on the
-service so five wrong entries trigger a cooldown shared across devices, which a
-client-side counter could not enforce.
-
-Separating editable values from journey state was the other constraint. React Hook
-Form stays the only owner of editable values, and the store accepts transitions,
-so editing reviewed details invalidates the approval in one place. The form
-provider sits above the navigation stack, which is why Back and forward keep the
-draft without persisting anything.
+Another challenge I faced is the time constraint, although the requirements look simple at first glance, the implementation took longer than expected due to all the negative flow handlings that comes with the feature.
 
 ## Run it
 

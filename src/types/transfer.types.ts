@@ -1,6 +1,6 @@
 import type {
   TGetApiEndpointRequest,
-  TGetApiEndpointResponse,
+  TGetApiEndpointFailure,
 } from "@/schemas/api.schema";
 
 export type TRecipientDraftSelection =
@@ -32,10 +32,7 @@ export type TRecipientSelection =
   | { kind: "MANUAL" }
   | { kind: "SAVED"; name: string; account: string };
 
-export type TTransferFailure = Exclude<
-  TGetApiEndpointResponse<"/transfers">,
-  { kind: "success" }
->;
+export type TTransferFailure = TGetApiEndpointFailure<"/transfers">;
 
 /**
  *

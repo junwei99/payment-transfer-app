@@ -5,7 +5,14 @@ import { GET_TRANSFER_API_SCHEMA } from "@/schemas/apis/get-transfer.schema";
 import { SUBMIT_TRANSFER_API_SCHEMA } from "@/schemas/apis/submit-transfer.schema";
 import { z } from "zod";
 
-export type TApiResponseSchema<TSuccess = unknown, TError = unknown> = {
+export type TApiErrorResponse = {
+  error: { code: string; message: string; retryAt?: string };
+};
+
+export type TApiResponseSchema<
+  TSuccess = unknown,
+  TError extends TApiErrorResponse = TApiErrorResponse,
+> = {
   successResponse: z.ZodType<TSuccess>;
   errResponse: z.ZodType<TError>;
 };
@@ -29,11 +36,6 @@ export type TApiEndpointSchema<T extends TApiEndpoints = TApiEndpoints> =
 export const getApiSchema = <T extends TApiEndpoints>(endpoint: T) =>
   API_SCHEMA[endpoint];
 
-export const getResponseSchema = <T extends TApiEndpoints>(endpoint: T) => {
-  const schema = getApiSchema(endpoint);
-  return { success: schema.successResponse, error: schema.errResponse };
-};
-
 export type TApiSchemaRequest<TSchema extends TApiEndpointSchema> = z.input<
   TSchema["request"]
 >;
@@ -50,13 +52,13 @@ export type TGetApiEndpointErrorResponse<T extends TApiEndpoints> = z.output<
   TApiEndpointSchema<T>["errResponse"]
 >;
 
-export type TGetApiEndpointResponse<T extends TApiEndpoints> = TApiResult<
-  TGetApiEndpointSuccessResponse<T>,
+export type TGetApiEndpointFailure<T extends TApiEndpoints> = TApiFailure<
   TGetApiEndpointErrorResponse<T>
 >;
 
-export type TApiResult<TSuccess, TFailure> =
-  | { kind: "success"; data: TSuccess; status: number }
+export type TApiFailure<
+  TFailure extends TApiErrorResponse = TApiErrorResponse,
+> =
   | { kind: "api-error"; error: TFailure; status: number }
   | {
       kind: "parse-error";
@@ -70,7 +72,6 @@ export type TApiResult<TSuccess, TFailure> =
       message: string;
     };
 
-export type TApiSchemaResponse<TSchema extends TApiResponseSchema> = TApiResult<
-  z.output<TSchema["successResponse"]>,
-  z.output<TSchema["errResponse"]>
+export type TApiSchemaResponse<TSchema extends TApiResponseSchema> = z.output<
+  TSchema["successResponse"]
 >;

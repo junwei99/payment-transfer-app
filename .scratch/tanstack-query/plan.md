@@ -16,11 +16,12 @@ Retain src/services/index.services.ts, the Axios requestor, Zod response parsing
 existing POST JSON contracts, and required EXPO_PUBLIC_API_URL without a fallback.
 Do not add client calls to backend health or developer-control endpoints.
 
-The requestor returns discriminated success, api-error, parse-error, and
-transport-error results. Add a small adapter that returns validated success data
-or throws a meaningful error retaining the failure category and API details.
-Do not put failed response wrappers into the success cache. Keep requestor retries
-disabled; query-level read retries are configured separately.
+The requestor returns validated success data or throws the shared ServiceError,
+retaining api-error, parse-error, and transport-error categories and details.
+Unexpected programming/configuration errors propagate unchanged. This replaces
+the original Query-level unwrap adapter; Query functions call services directly.
+Do not put failures into the success cache. Keep requestor retries disabled;
+query-level read retries are configured separately.
 
 Consult official TanStack documentation during implementation:
 
@@ -160,7 +161,7 @@ runtime scenarios passed if they were not exercised.
 
 ## Implementation verification — 2026-11-08
 
-Implemented the Query provider, service-error adapter, account/recipient/receipt
+Implemented the Query provider, shared requestor error handling, account/recipient/receipt
 reads, approval/submission mutations, local input validation, and same-body/key
 recovery. Removed the client mock gateway and scenario controls. Updated the
 root and service READMEs. Existing staged work was preserved.

@@ -27,10 +27,15 @@ lint and TypeScript checks.
 - Accept and strip extra response fields, including nested object fields.
   Missing or invalid required fields produce parse-error.
 - Error envelopes remain `{ error: { code: string, message: string } }`.
-- Return a discriminated result union: success (data/status), api-error
-  (parsed envelope/status), parse-error (expected success/error, issues/status),
-  transport-error (timeout/cancelled/network reason and message).
-- No required registration callbacks. Callers handle results.
+- Return validated success data directly, without success HTTP metadata. Expected
+  failures throw the shared ServiceError with a discriminated failure payload:
+  api-error (parsed envelope/status, including endpoint-specific PIN retryAt),
+  parse-error (expected success/error, issues/status), or transport-error
+  (timeout/cancelled/network reason and message). This replaces the original
+  returned result union and Query-level unwrap adapter.
+- Unexpected programming/configuration errors propagate unchanged. No required
+  registration callbacks; callers handle rejected promises. Retry and transfer
+  recovery policies remain outside the requestor.
 - Default timeout is 30 seconds. Support AbortSignal and no automatic retries.
 - Service URL comes from EXPO_PUBLIC_API_URL with no hardcoded fallback;
   supply an example environment file and simulator/physical-device instructions.

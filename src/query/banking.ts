@@ -1,45 +1,7 @@
-import type { TApiResult } from "@/schemas/api.schema";
 import { bankingService } from "@/services/index.services";
 import type { TSubmission } from "@/types/transfer.types";
+import { ServiceError } from "@/utils/service-error.utils";
 import { mutationOptions, queryOptions } from "@tanstack/react-query";
-
-type TFailure = Exclude<
-  TApiResult<
-    never,
-    { error: { code: string; message: string; retryAt?: string } }
-  >,
-  { kind: "success" }
->;
-
-export class ServiceError extends Error {
-  constructor(public readonly failure: TFailure) {
-    super(
-      failure.kind === "api-error"
-        ? failure.error.error.message
-        : failure.kind === "transport-error"
-          ? failure.message
-          : "The service returned an invalid response.",
-    );
-    this.name = "ServiceError";
-  }
-}
-
-export const unwrap = async <T>(
-  result: Promise<
-    TApiResult<
-      T,
-      { error: { code: string; message: string; retryAt?: string } }
-    >
-  >,
-) => {
-  const response = await result;
-
-  if (response.kind === "success") {
-    return response.data;
-  }
-
-  throw new ServiceError(response);
-};
 
 export const retryRead = (count: number, error: Error) => {
   if (count >= 1 || !(error instanceof ServiceError)) {
@@ -69,21 +31,20 @@ export const isConnectionError = (error: unknown) => {
 
 export const ACCOUNT_OPTIONS = queryOptions({
   queryKey: ["account"],
-  queryFn: ({ signal }) => unwrap(bankingService.getAccount({}, { signal })),
+  queryFn: ({ signal }) => bankingService.getAccount({}, { signal }),
   staleTime: 0,
   retry: retryRead,
 });
 
 export const RECIPIENTS_OPTIONS = queryOptions({
   queryKey: ["recipients"],
-  queryFn: ({ signal }) => unwrap(bankingService.getRecipients({}, { signal })),
+  queryFn: ({ signal }) => bankingService.getRecipients({}, { signal }),
   staleTime: 5 * 60 * 1000,
   retry: retryRead,
 });
 
 export const SUBMIT_TRANSFER_OPTIONS = mutationOptions({
-  mutationFn: (body: TSubmission) =>
-    unwrap(bankingService.submitTransfer(body)),
+  mutationFn: (body: TSubmission) => bankingService.submitTransfer(body),
   retry: false,
   networkMode: "always",
   gcTime: 0,
@@ -92,8 +53,7 @@ export const SUBMIT_TRANSFER_OPTIONS = mutationOptions({
 export const transferOptions = (id: string) =>
   queryOptions({
     queryKey: ["transfer", id],
-    queryFn: ({ signal }) =>
-      unwrap(bankingService.getTransfer({ id }, { signal })),
+    queryFn: ({ signal }) => bankingService.getTransfer({ id }, { signal }),
     enabled: !!id.trim(),
     staleTime: Infinity,
     retry: retryRead,

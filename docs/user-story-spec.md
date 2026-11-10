@@ -307,8 +307,10 @@ See the [implementation handoff](../.scratch/device-authentication/spec.md).
   request state in local React state or a small flow context. Do not add Zustand,
   persistent Query storage, or cached authentication results.
 - Retain the Axios requestor and Zod response boundary. Validate external responses
-  before use or caching. Adapt service failure results into thrown Query errors
-  while preserving API, transport, and response-validation categories.
+  before use or caching. The requestor returns validated success data directly and
+  throws a shared ServiceError preserving API, transport, and response-validation
+  categories and details. Unexpected programming/configuration errors propagate
+  unchanged; Query callers need no unwrap adapter.
 - The requestor requires an explicitly configured API URL, defaults to a 30-second
   timeout, supports cancellation, and never retries itself. Cancellation does not
   establish that a submitted payment was not committed.

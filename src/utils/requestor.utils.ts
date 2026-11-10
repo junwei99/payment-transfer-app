@@ -6,6 +6,7 @@ import {
   type TApiSchemaRequest,
   type TApiSchemaResponse,
 } from "@/schemas/api.schema";
+import { ServiceError } from "@/utils/service-error.utils";
 import { create, isAxiosError, isCancel, type AxiosResponse } from "axios";
 import { z } from "zod";
 
@@ -20,26 +21,30 @@ const parseResponse = <TSchema extends TApiResponseSchema>(
       data,
     );
 
-    return parsed.success
-      ? { kind: "success", data: parsed.data, status }
-      : {
-          kind: "parse-error",
-          expected: "success",
-          issues: parsed.error.issues,
-          status,
-        };
+    if (parsed.success) {
+      return parsed.data;
+    }
+
+    throw new ServiceError({
+      kind: "parse-error",
+      expected: "success",
+      issues: parsed.error.issues,
+      status,
+    });
   }
 
   const parsed = z.safeParse<TSchema["errResponse"]>(schema.errResponse, data);
 
-  return parsed.success
-    ? { kind: "api-error", error: parsed.data, status }
-    : {
-        kind: "parse-error",
-        expected: "error",
-        issues: parsed.error.issues,
-        status,
-      };
+  if (parsed.success) {
+    throw new ServiceError({ kind: "api-error", error: parsed.data, status });
+  }
+
+  throw new ServiceError({
+    kind: "parse-error",
+    expected: "error",
+    issues: parsed.error.issues,
+    status,
+  });
 };
 
 const getApiBaseURL = (): string => {
@@ -124,20 +129,20 @@ export const createRequestor = (
         });
       } catch (error) {
         if (isCancel(error)) {
-          return {
+          throw new ServiceError({
             kind: "transport-error",
             reason: "cancelled",
             message: "Request cancelled.",
-          };
+          });
         }
 
         if (isAxiosError(error)) {
           if (error.code === "ECONNABORTED" || error.code === "ETIMEDOUT") {
-            return {
+            throw new ServiceError({
               kind: "transport-error",
               reason: "timeout",
               message: "Request timed out.",
-            };
+            });
           }
 
           if (
@@ -148,11 +153,11 @@ export const createRequestor = (
                 error.code ?? "",
               ))
           ) {
-            return {
+            throw new ServiceError({
               kind: "transport-error",
               reason: "network",
               message: "Unable to reach the API service.",
-            };
+            });
           }
         }
 

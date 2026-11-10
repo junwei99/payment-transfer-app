@@ -6,5 +6,5 @@
 - React Hook Form manages form values and validation state. Its Zod integration keeps validation rules in the schemas, and a shared provider preserves values across screens.
 - TanStack Query manages server data. Caching and query invalidation keep the UI up to date after API writes.
 - Zustand manages shared client state outside forms. It gives that state one owner without duplicating form values or cached API data.
-- Axios handles HTTP requests through a shared requestor. Centralized configuration keeps timeouts, cancellation, and response handling consistent.
+- Axios handles HTTP requests through a shared requestor. It returns validated success data directly and throws a shared `ServiceError` retaining API, response-validation, and transport failure details. Unexpected programming and configuration errors propagate unchanged. Retry and transfer recovery policies belong to callers.
 - Expo's ESLint preset checks code quality using rules suited to React Native.

@@ -12,6 +12,11 @@ implementation is complete; manual device acceptance remains pending.
 ## Agreed scope
 
 - Keep services/mock-api as the backend and preserve the Axios/Zod API boundary.
+- The requestor returns validated data directly and throws a shared ServiceError
+  for expected API, parsing, and transport failures, preserving their details.
+  Unexpected programming/configuration errors propagate unchanged. This supersedes
+  the original Query-level unwrap adapter; retry and transfer recovery rules stay
+  with their existing owners.
 - Fetch account, recipients, and completed transfers through Query. Use mutations
   for transfer approval and submission.
 - Originally kept form, review, validation, simulated authentication, and

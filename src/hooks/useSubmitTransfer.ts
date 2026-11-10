@@ -1,10 +1,8 @@
 import {
   ACCOUNT_OPTIONS,
   isDefinitiveRejection,
-  ServiceError,
   SUBMIT_TRANSFER_OPTIONS,
   transferOptions,
-  unwrap,
 } from "@/query/banking";
 import { bankingService } from "@/services/index.services";
 import { usePinAttempts } from "@/stores/pin-attempts";
@@ -13,6 +11,7 @@ import type {
   TReviewedTransfer,
   TTransferAuthentication,
 } from "@/types/transfer.types";
+import { ServiceError } from "@/utils/service-error.utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { randomUUID } from "expo-crypto";
 import { useCallback, useRef } from "react";
@@ -32,9 +31,7 @@ export const useSubmitTransfer = () => {
         throw new Error("Transfer authentication is required.");
       }
 
-      return unwrap(
-        bankingService.authorizeTransfer({ ...details, authentication }),
-      );
+      return bankingService.authorizeTransfer({ ...details, authentication });
     },
     retry: false,
     networkMode: "always",

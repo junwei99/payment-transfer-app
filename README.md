@@ -98,8 +98,12 @@ All calls use POST JSON bodies. Banking services live in
 `src/services/index.services.ts`; endpoint schemas are in `src/schemas/apis/` and
 the registry and inferred types in `src/schemas/api.schema.ts`.
 `src/utils/requestor.utils.ts` sends bodies unchanged, parses responses with Zod,
-and returns discriminated success, API, parse, or transport results. The Query
-adapter throws failures instead of caching them as successful data.
+and returns validated success data directly. Expected API, parse, and transport
+failures throw the shared `ServiceError` from `src/utils/service-error.utils.ts`.
+Its `failure` retains the category, HTTP status where available, parsed API details
+(including PIN cooldown), validation issues, or transport reason. Unexpected
+programming and configuration errors propagate unchanged. Callers do not unwrap
+results; Query receives rejected promises for failures.
 
 The requestor timeout is 30 seconds and it never retries. Health and developer
 control endpoints are for external development tools only; the mobile client

@@ -69,22 +69,27 @@ never executes. Request types use z.input; parsed responses use z.output.
 
 Expose a factory accepting baseURL and an optional timeout (default 30000).
 The API_SCHEMA registry requires request, successResponse, and errResponse
-schemas. createRequest(endpoint) returns `(body, options?) => Promise<ApiResult<...>>`.
+schemas. createRequest(endpoint) returns `(body, options?) => Promise<SuccessData>`
+with the success output inferred from its schema.
 Options expose AbortSignal; HTTP method is always POST. Do not expose Axios config
 that could bypass method, URL, body, status handling, or schema validation.
 
 Keep Axios response data unknown until parsing. Let HTTP responses of all statuses
 reach the parsing branch. Preserve malformed JSON as a response parsing failure,
 not a network failure; configure decoding accordingly. Parse success/error bodies
-with their respective schemas and return the agreed union from spec.md. Do not
-return raw Axios responses or unvalidated data. Avoid logging financial payloads.
+with their respective schemas. Return validated success data directly and throw
+the shared ServiceError for API, parsing, or transport failures, retaining the
+discriminated failure details from spec.md. This replaces the original returned
+result union. Do not return raw Axios responses or unvalidated data. Avoid logging
+financial payloads.
 
 Transport failures distinguish timeout, cancellation, and network failures.
 Unexpected programming/configuration errors should remain diagnosable rather than
 being disguised as network failures. Do not retry or generate idempotency keys.
 
 Check typing through the implementation and tsc: required schemas cannot be omitted;
-body/return types are inferred; narrowing kind exposes the corresponding properties.
+body/return types are inferred; narrowing ServiceError.failure.kind exposes the
+corresponding properties. Keep endpoint failure types separate from success types.
 Do not add automated test files or a test runner.
 
 ## 5. Declare services and configure connectivity
@@ -145,7 +150,7 @@ Add TanStack Query, connect screens, then remove marked client mocks. Integrate
 actual device authentication separately from transfer approval. Preserve identical
 submission details, approval ID, and idempotency key when retrying uncertain outcomes.
 Read confirmations by transfer ID and distinguish local draft clearing from server
-reset. Adapt result failures into Query errors as appropriate.
+reset. Query consumes the requestor's data or rejected promise directly.
 
 ## Client scope update
 

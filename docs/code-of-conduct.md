@@ -6,7 +6,7 @@ Apply to TypeScript and React Native code, including tests and mocks.
 
 - Naming: camelCase variables; UPPER_SNAKE_CASE fixed constants (limits/configuration); PascalCase components; `T`-prefixed PascalCase type aliases; `I`-prefixed PascalCase interfaces. Runtime `const` values use camelCase.
 
-- Files: PascalCase component files; camelCase or kebab-case hook files starting with `use`; kebab-case other TypeScript files. Preserve framework, declaration, and configuration filenames, including `index.tsx`, `_layout.tsx`, `expo-env.d.ts`, and `tsconfig.json`. Route filenames follow URL names.
+- Files: PascalCase component files; camelCase or camel-case hook files starting with `use`; kebab-case other TypeScript files. Preserve framework, declaration, and configuration filenames, including `index.tsx`, `_layout.tsx`, `expo-env.d.ts`, and `tsconfig.json`. Route filenames follow URL names.
 
 - Imports: use configured absolute aliases for all project-local imports, type imports, re-exports, and dynamic imports. Client source uses `@/…`; asset `require` calls use `@/assets/…`. Ban `./` and `../`; keep package names for package imports.
 

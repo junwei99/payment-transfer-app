@@ -14,6 +14,14 @@ import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useFormContext } from "react-hook-form";
 import { Keyboard } from "react-native";
+import Animated, {
+  LinearTransition,
+  ReduceMotion,
+} from "react-native-reanimated";
+
+const fieldLayoutTransition = LinearTransition.duration(220).reduceMotion(
+  ReduceMotion.System,
+);
 
 export const TransferForm = () => {
   const { handleSubmit } = useFormContext<
@@ -49,19 +57,27 @@ export const TransferForm = () => {
 
   return (
     <>
-      <RecipientSection />
-      <TransferAmountField />
-      <Field
-        {...note}
-        label="Note (optional)"
-        hint="Up to 200 characters."
-        multiline
-      />
-      <Button
-        label="Review transfer"
-        disabled={!account.data}
-        onPress={reviewTransfer}
-      />
+      <Animated.View layout={fieldLayoutTransition}>
+        <RecipientSection />
+      </Animated.View>
+      <Animated.View layout={fieldLayoutTransition}>
+        <TransferAmountField />
+      </Animated.View>
+      <Animated.View layout={fieldLayoutTransition}>
+        <Field
+          {...note}
+          label="Note (optional)"
+          hint="Up to 200 characters."
+          multiline
+        />
+      </Animated.View>
+      <Animated.View layout={fieldLayoutTransition}>
+        <Button
+          label="Review transfer"
+          disabled={!account.data}
+          onPress={reviewTransfer}
+        />
+      </Animated.View>
     </>
   );
 };

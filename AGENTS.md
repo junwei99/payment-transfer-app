@@ -11,6 +11,7 @@ Libraries with native code need a development build; Expo Go only includes its b
 ## Project decisions
 
 Follow [docs/tech-choices.md](docs/tech-choices.md) for technology and implementation choices.
+Follow [docs/design/styling-guide.md](docs/design/styling-guide.md) for screen styling, motion, and interaction changes.
 Follow [docs/design/loading-states.md](docs/design/loading-states.md) for transfer loading and recipient selection behavior.
 Follow [docs/design/form-validation.md](docs/design/form-validation.md) when changing form schemas, validation, or transfer input behavior.
 

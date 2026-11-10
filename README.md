@@ -190,21 +190,34 @@ bun install --frozen-lockfile
 bun run dev
 ```
 
-Then, from the repository root in a second terminal, build and run the app:
+Expose the service through a Cloudflare quick tunnel, from a second terminal:
+
+```sh
+cloudflared tunnel --url http://localhost:3001
+```
+
+Install `cloudflared` first with `brew install cloudflared` if it is missing.
+The command prints a public `https://<random>.trycloudflare.com` URL. Put that
+URL in `.env.local`:
+
+```sh
+EXPO_PUBLIC_API_URL=https://<random>.trycloudflare.com
+```
+
+Then, from the repository root in a third terminal, build and run the app:
 
 ```sh
 pnpm exec expo run:ios --device     # or: pnpm exec expo run:android --device
 ```
 
-| Target           | `EXPO_PUBLIC_API_URL`      |
-| ---------------- | -------------------------- |
-| iOS simulator    | `http://localhost:3001`    |
-| Android emulator | `http://10.0.2.2:3001`     |
-| Physical device  | `http://<Mac-LAN-IP>:3001` |
+The tunnel works from the simulator, the emulator, and a physical device, so the
+same URL fits every target. It changes each time `cloudflared` starts: update
+`.env.local` and restart Expo, because the value is inlined at build time. Anyone
+with the URL can reach the mock service, so stop the tunnel when the demo ends.
 
 The app throws a setup error when the variable is missing or invalid; there is no
-fallback. The service binds to `0.0.0.0`, and Metro tunnels do not forward it.
-Face ID needs a development build, so Expo Go will not run that path.
+fallback. Metro's tunnel does not forward the service. **Face ID needs a
+development build, so Expo Go will not run that path.**
 
 ## Project map
 
@@ -224,23 +237,3 @@ services/
   mock-api/     Bun service: balance, approvals, idempotent transfers
 docs/           architecture, design guides, and decisions
 ```
-
-## Assumptions
-
-- macOS with Xcode for iOS, the Android SDK and USB debugging for Android, and
-  Bun 1.2.11 or later for the service
-- One MYR account and no sign-in. Changing `.env.local` needs a reload because
-  Expo inlines the value at build time
-- The demo PIN is `111111`. It is a fixed credential the service verifies, not
-  the device passcode
-- No real money moves; the service simulates payments
-
-## Known limits
-
-- Recovery lasts only while the app is open. There is no persisted draft, cache,
-  or restart recovery
-- No transfer history. Receipts are looked up by transfer ID
-- The service does not verify biometric proof; the app declares the result
-- Contact import and recent-transfer history were the optional stretch goals and
-  are not implemented
-- No automated tests. Formatting, lint, and type checks pass

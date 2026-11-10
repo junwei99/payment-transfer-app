@@ -5,14 +5,14 @@ TanStack Query, Zustand, React Hook Form, Zod, Uniwind.
 
 ## Demo
 
-<!-- Record 60 to 90 seconds against a development build, then replace this section
-     with: [![Watch the demo](docs/demo-poster.png)](docs/demo.mp4)
-     Suggested capture: invalid input, manual recipient, review, Face ID prompt,
-     receipt, and a fail-once retry that debits only once. -->
+Link: https://drive.google.com/file/d/1slF05fUAoW2S6Bk2KFh9wCL8-PBLwYky/view?usp=sharing
 
-Recording pending. The walkthrough covers invalid input, manual recipient entry,
-review, the biometric prompt, the receipt, and a failed submission retried with
-the identical request.
+Steps:
+
+1. Happy flow payment with Face ID, alongside transfer form validation
+2. Biometric fallback. Face ID cancelled or non-matching, then the banking PIN.
+3. Unconfirmed payment scenario. The service rejects the first submission with a 503; the app keeps the request and the retry completes it once.
+4. Offline home screen. The connection notice, cached recipients, and recovery after reconnecting.
 
 ## Technology choices
 
